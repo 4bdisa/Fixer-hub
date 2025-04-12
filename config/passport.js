@@ -5,35 +5,35 @@ import User from '../models/user.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL, // Must match Google Cloud
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
   scope: ["profile", "email"]
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const { email, name, picture } = profile._json;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
+      // ✅ User exists, continue login
       return done(null, existingUser);
     }
 
-    // Create temporary token for new users
-    const tempUser = {
+    // 🚧 New user — don’t save yet, just pass token to frontend
+    const tempUserPayload = {
       email,
       name,
       profileImage: picture,
       authMethod: 'google'
     };
 
-    const token = jwt.sign(tempUser, process.env.JWT_SECRET, { 
-      expiresIn: '10m' 
-    });
+    // 🔐 Token lasts 10 minutes
+    const token = jwt.sign(tempUserPayload, process.env.JWT_SECRET, { expiresIn: '10m' });
 
-    return done(null, false, { token });
+    // 👇 We pass 'false' to skip login and attach info
+    return done(null, false, { message: 'new_user', token });
 
   } catch (err) {
     return done(err, false);
