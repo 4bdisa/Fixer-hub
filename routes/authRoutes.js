@@ -4,7 +4,7 @@ import {
     completeServiceProvider,
     completeClient
   } from '../controllers/authController.js';
-  import { ensureAuth } from "../middlewares/authMiddleware.js";
+  import { ensureAuth } from "../middleWares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -13,25 +13,12 @@ router.get('/auth/google', passport.authenticate('google', {
     scope: ['profile', 'email']
 }));
 
-router.get('/auth/google/callback', (req, res, next) => {
-  passport.authenticate('google', { failureRedirect: '/login' }, (err, user, info) => {
-    if (err) return next(err);
-
-    if (user) {
-      // ✅ Logged-in user (already in DB)
-      req.logIn(user, (err) => {
-        if (err) return next(err);
-        return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-      });
-    } else if (info?.token) {
-      // 🆕 New user - redirect frontend with token to continue onboarding
-      return res.redirect(`${process.env.FRONTEND_URL}/select-role?token=${info.token}`);
-    } else {
-      // ❌ Unknown case
-      return res.redirect('/login');
-    }
-  })(req, res, next);
-});
+router.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req, res) => {
+    res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  }
+);
 
 // routes/protected.js
 
