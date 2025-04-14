@@ -1,4 +1,8 @@
 import { generateToken } from "../utils/jwt.js";
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import User from '../models/user.js';
 
 // Handle Google OAuth Login Success
 export const googleOAuthCallback = (req, res) => {
@@ -14,48 +18,145 @@ export const logoutUser = (req, res) => {
 };
 
 
-// Complete Service Provider Registration
-export const completeServiceProvider = async (req, res) => {
-  try {
-    const { token, password, skills, location, workDays, experienceYears } = req.body;
-    
-    // Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Check for existing user
-    const existingUser = await user.findOne({ email: decoded.email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
 
-    // Create new service provider
-    const user = await user.create({
-      ...decoded,
+export const completeServiceProvider = async (req, res) => {
+  // 1️⃣ Validate request
+  if (!req.body) {
+    return res.status(400).json({ error: 'Request body is missing' });
+  }
+
+  const { token, password, skills, location, experienceYears } = req.body;
+
+  // Field validation
+  const missingFields = {
+    token: !token,
+    password: !password,
+    skills: !skills,
+    location: !location,
+    experienceYears: experienceYears === undefined
+  };
+
+  if (Object.values(missingFields).some(Boolean)) {
+    return res.status(400).json({ 
+      error: 'Missing required fields',
+      missing: missingFields
+    });
+  }
+
+  // 2️⃣ Verify JWT from Passport
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Validate expected payload structure
+    if (!decoded?.email || !decoded?.name || decoded?.authMethod !== 'google') {
+      throw new Error('Invalid token structure');
+    }
+  } catch (jwtErr) {
+    return res.status(401).json({
+      error: jwtErr.name === 'TokenExpiredError' 
+        ? 'Registration session expired - please reauthenticate with Google' 
+        : 'Invalid registration token',
+      details: jwtErr.message
+    });
+  }
+
+  // 3️⃣ Check for existing user (final safeguard)
+ try {
+  // More robust existence check
+  const userCount = await User.countDocuments({ email: decoded.email }).exec();
+  
+  if (userCount > 0) {
+    return res.status(409).json({
+      error: 'Email already registered',
+      solution: 'Try logging in instead'
+    });
+  }
+} catch (dbErr) {
+  console.error('Database check failed:', {
+    error: dbErr.message,
+    stack: dbErr.stack,
+    connectionState: mongoose.connection.readyState,
+    collectionExists: await mongoose.connection.db.listCollections({ name: 'users' }).hasNext()
+  });
+
+  return res.status(503).json({
+    error: 'Service unavailable',
+    details: process.env.NODE_ENV === 'development' ? dbErr.message : undefined,
+    // Include additional debug info:
+    debug: {
+      collection: 'users',
+      query: { email: decoded.email },
+      connection: mongoose.connection.readyState === 1 ? 'active' : 'inactive'
+    }
+  });
+}
+
+  // 4️⃣ Create user
+  try {
+    const newUser = await User.create({
+      name: decoded.name,
+      email: decoded.email,
+      image: decoded.profileImage || 'default-profile.jpg',
       role: 'service_provider',
       password: await bcrypt.hash(password, 10),
-      skills: skills.split(',').map(skill => skill.trim()),
+      skills: typeof skills === 'string' 
+        ? skills.split(',').map(s => s.trim()).filter(Boolean)
+        : skills,
       location: {
         type: 'Point',
-        coordinates: location
+        coordinates: Array.isArray(location) ? location : JSON.parse(location)
       },
-      workDays,
-      experienceYears
+      experienceYears: Number(experienceYears),
+      
     });
 
-    res.status(201).json(user);
+    // 5️⃣ Auto-login
+    req.login(newUser, (loginErr) => {
+      const userResponse = {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        image: newUser.image
+      };
+
+      if (loginErr) {
+        console.error('Passport login failed:', loginErr);
+        return res.status(201).json({
+          success: true,
+          message: 'Registration complete - please login',
+          user: userResponse
+        });
+      }
+
+      res.status(201).json({ success: true, user: userResponse });
+    });
+
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    const errorResponse = {
+      error: 'Registration failed',
+      details: err.message
+    };
+
+    if (err.name === 'ValidationError') {
+      errorResponse.validationErrors = Object.values(err.errors).map(e => e.message);
+      return res.status(422).json(errorResponse);
+    }
+
+    res.status(500).json(errorResponse);
   }
 };
+
 
 // Complete Client Registration
 export const completeClient = async (req, res) => {
   try {
     const { token, password } = req.body;
-    
+
     // Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Check for existing user
     const existingUser = await user.findOne({ email: decoded.email });
     if (existingUser) {

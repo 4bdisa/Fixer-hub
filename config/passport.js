@@ -30,7 +30,7 @@ passport.use(new GoogleStrategy({
     };
 
     // 🔐 Token lasts 10 minutes
-    const token = jwt.sign(tempUserPayload, process.env.JWT_SECRET, { expiresIn: '10m' });
+    const token = jwt.sign(tempUserPayload, process.env.JWT_SECRET, { expiresIn: '40m' });
 
     // 👇 We pass 'false' to skip login and attach info
     return done(null, false, { message: 'new_user', token });

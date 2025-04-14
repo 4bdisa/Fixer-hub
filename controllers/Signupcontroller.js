@@ -1,45 +1,13 @@
 import User from "../models/user.js"; // Assuming this is the path to the User model
-import passport from "passport";
+import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 
 
-// Controller to handle Google OAuth login and signup as service provider
-export const signupServiceProvider = async (req, res) => {
-  try {
-    passport.authenticate("google", { scope: ["profile", "email"] })(req, res, async () => {
-      // Step 2: After Google authentication, check if user already exists
-      const user = await User.findOne({ email: req.user.email });
-
-      if (!user) {
-        // If no user exists, create a new service provider user
-        const newUser = new User({
-          name: req.user.displayName,
-          email: req.user.email,
-          profileImage: req.user.photos ? req.user.photos[0].value : "",
-          role: "service_provider", // Automatically assign the role as service_provider
-          isVerified: true, // Optionally mark as verified
-        });
-
-        // Save the new user to the database
-        await newUser.save();
-
-        // Return the newly created user
-        return res.status(201).json({ message: "User created successfully", user: newUser });
-      } else {
-        // If the user already exists, return existing user data
-        return res.status(200).json({ message: "User already exists", user });
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "An error occurred during the signup process" });
-  }
-};
 // Controller for updating service provider's profile (skills, keywords, workDays, etc.)
 export const completeServiceProviderProfile = async (req, res) => {
   try {
     const { userId } = req.params;
     const { skills, keywords, country, workDays, experienceYears, homeService } = req.body;
-
     // Step 1: Prepare the update object for the user
     const updateData = {
       skills,
@@ -72,3 +40,59 @@ export const completeServiceProviderProfile = async (req, res) => {
     return res.status(500).json({ message: "An error occurred while updating the profile" });
   }
 };
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // From Google Cloud Console
+
+export const completeServiceProvider = async (req, res) => {
+  const { token, password, skills, location, experienceYears } = req.body;
+
+  try {
+    // 🔐 1. Verify Google token (NOT your JWT_SECRET!)
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, picture: image } = payload; // Google uses 'picture', not 'image'
+
+    
+    // 🧠 2. Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: 'User already exists' });
+    }
+
+    // 🔑 3. Hash password (if required)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 👤 4. Create new user
+    const newUser = new User({
+      name,
+      email,
+      image, // Or 'picture' if your schema uses that
+      password: hashedPassword,
+      role: 'service_provider',
+      skills,
+      location,
+      experienceYears,
+    });
+
+    await newUser.save();
+
+    // 🔐 5. Log in the user (if using sessions)
+    req.logIn(newUser, (err) => {
+      if (err) return res.status(500).json({ message: 'Login after signup failed' });
+      res.status(201).json({ message: 'User created and logged in', user: newUser });
+    });
+
+  } catch (error) {
+    console.error('Error completing registration:', error);
+    res.status(400).json({ 
+      message: 'Invalid Google token or registration error',
+      error: error.message 
+    });
+  }
+};
+
+export default { completeServiceProviderProfile, completeServiceProvider };

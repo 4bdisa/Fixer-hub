@@ -13,7 +13,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: process.env.FRONTEND_URL,
     credentials: true
   })
 );
@@ -36,7 +36,9 @@ app.use(passport.session());
 
 // Routes
 app.use("/", authRoutes);
-app.use("/auth", authRoutes);
+// app.use("/auth", authRoutes);
+app.use("/api", authRoutes); // Ensure this is the correct path for your API
+
 
 // Database & Server
 mongoose
