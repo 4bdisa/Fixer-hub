@@ -18,6 +18,7 @@ passport.use(new GoogleStrategy({
 
     if (existingUser) {
       // ✅ User exists, continue login
+      
       return done(null, existingUser);
     }
 

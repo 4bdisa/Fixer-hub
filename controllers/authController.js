@@ -97,7 +97,7 @@ export const completeServiceProvider = async (req, res) => {
     const newUser = await User.create({
       name: decoded.name,
       email: decoded.email,
-      image: decoded.profileImage || 'default-profile.jpg',
+      profileImage: decoded.profileImage || 'default-profile.jpg',
       role: 'service_provider',
       password: await bcrypt.hash(password, 10),
       skills: typeof skills === 'string' 
@@ -130,7 +130,7 @@ export const completeServiceProvider = async (req, res) => {
         });
       }
 
-      res.status(201).json({ success: true, user: userResponse });
+      res.status(200).json({ success: true, user: userResponse });
     });
 
   } catch (err) {
@@ -151,27 +151,115 @@ export const completeServiceProvider = async (req, res) => {
 
 // Complete Client Registration
 export const completeClient = async (req, res) => {
+  // 1️⃣ Validate request
+  if (!req.body) {
+    return res.status(400).json({ error: 'Request body is missing' });
+  }
+
+  const { token, password, location } = req.body;
+
+  // Field validation
+  const missingFields = {
+    token: !token,
+    password: !password,
+    location: !location
+  };
+
+  if (Object.values(missingFields).some(Boolean)) {
+    return res.status(400).json({ 
+      error: 'Missing required fields',
+      missing: missingFields
+    });
+  }
+
+  // 2️⃣ Verify JWT from Passport
+  let decoded;
   try {
-    const { token, password } = req.body;
-
-    // Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Check for existing user
-    const existingUser = await user.findOne({ email: decoded.email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (!decoded?.email || !decoded?.name || decoded?.authMethod !== 'google') {
+      throw new Error('Invalid token structure');
     }
+  } catch (jwtErr) {
+    return res.status(401).json({
+      error: jwtErr.name === 'TokenExpiredError' 
+        ? 'Registration session expired' 
+        : 'Invalid registration token',
+      details: jwtErr.message
+    });
+  }
 
-    // Create new client
-    const user = await user.create({
-      ...decoded,
-      role: 'client',
-      password: await bcrypt.hash(password, 10)
+  // 3️⃣ Check for existing user
+  try {
+    const userCount = await User.countDocuments({ email: decoded.email }).exec();
+    
+    if (userCount > 0) {
+      return res.status(409).json({
+        error: 'Email already registered',
+        solution: 'Try logging in instead'
+      });
+    }
+  } catch (dbErr) {
+    console.error('Database check failed:', {
+      error: dbErr.message,
+      connectionState: mongoose.connection.readyState
     });
 
-    res.status(201).json(user);
+    return res.status(503).json({
+      error: 'Service unavailable',
+      details: process.env.NODE_ENV === 'development' 
+        ? dbErr.message 
+        : 'Could not verify user status'
+    });
+  }
+
+  // 4️⃣ Create client
+  try {
+    const newUser = await User.create({
+      name: decoded.name,
+      email: decoded.email,
+      image: decoded.profileImage || 'default-client.jpg',
+      role: 'client',
+      password: await bcrypt.hash(password, 10),
+      location: {
+        type: 'Point',
+        coordinates: Array.isArray(location) ? location : JSON.parse(location)
+      }
+    });
+
+    // 5️⃣ Auto-login
+    req.login(newUser, (loginErr) => {
+      const userResponse = {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        image: newUser.image
+      };
+
+      if (loginErr) {
+        console.error('Auto-login failed:', loginErr);
+        return res.status(201).json({
+          success: true,
+          message: 'Registration complete - please login',
+          user: userResponse
+        });
+      }
+
+      res.status(200).json({ success: true, user: userResponse });
+    });
+
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    const errorResponse = {
+      error: 'Registration failed',
+      details: err.message
+    };
+
+    if (err.name === 'ValidationError') {
+      errorResponse.validationErrors = Object.values(err.errors).map(e => e.message);
+      return res.status(422).json(errorResponse);
+    }
+
+    res.status(500).json(errorResponse);
   }
 };

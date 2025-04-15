@@ -24,7 +24,9 @@ router.get('/auth/google/callback', (req, res, next) => {
       // ✅ Logged-in user (already in DB)
       req.logIn(user, (err) => {
         if (err) return next(err);
-        return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+        
+        
+        return res.redirect(`${process.env.FRONTEND_URL}/dashboard`) ;
       });
     } else if (info?.token) {
       // 🆕 New user - redirect frontend with token to continue onboarding
@@ -36,11 +38,29 @@ router.get('/auth/google/callback', (req, res, next) => {
   })(req, res, next);
 });
 
+
+
+
+router.get("/verify", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
+    res.status(200).json({ message: "Token is valid", user: decoded });
+  } catch (err) {
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+});
+
 // routes/protected.js
 
 // Registration Completion Routes
 router.post('/auth/complete/service-provider', completeServiceProvider);
-router.post('/complete/client', completeClient);
+router.post('/auth/complete/client', completeClient);
 
 
 router.get("/dashboard", ensureAuth, (req, res) => {
