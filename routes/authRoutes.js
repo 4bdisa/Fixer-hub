@@ -5,7 +5,7 @@ import {
     completeClient
   } from '../controllers/authController.js';
   import { ensureAuth } from "../middlewares/authMiddleware.js";
-
+import { loginUser } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -61,6 +61,7 @@ router.get("/verify", (req, res) => {
 // Registration Completion Routes
 router.post('/auth/complete/service-provider', completeServiceProvider);
 router.post('/auth/complete/client', completeClient);
+router.post('/login',  loginUser);
 
 
 router.get("/dashboard", ensureAuth, (req, res) => {

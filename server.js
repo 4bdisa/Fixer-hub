@@ -35,7 +35,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
-app.use("/", authRoutes);
+app.use("/", authRoutes); 
 // app.use("/auth", authRoutes);
 app.use("/api", authRoutes); // Ensure this is the correct path for your API
 

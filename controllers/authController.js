@@ -37,7 +37,7 @@ export const completeServiceProvider = async (req, res) => {
   };
 
   if (Object.values(missingFields).some(Boolean)) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Missing required fields',
       missing: missingFields
     });
@@ -47,50 +47,50 @@ export const completeServiceProvider = async (req, res) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Validate expected payload structure
     if (!decoded?.email || !decoded?.name || decoded?.authMethod !== 'google') {
       throw new Error('Invalid token structure');
     }
   } catch (jwtErr) {
     return res.status(401).json({
-      error: jwtErr.name === 'TokenExpiredError' 
-        ? 'Registration session expired - please reauthenticate with Google' 
+      error: jwtErr.name === 'TokenExpiredError'
+        ? 'Registration session expired - please reauthenticate with Google'
         : 'Invalid registration token',
       details: jwtErr.message
     });
   }
 
   // 3️⃣ Check for existing user (final safeguard)
- try {
-  // More robust existence check
-  const userCount = await User.countDocuments({ email: decoded.email }).exec();
-  
-  if (userCount > 0) {
-    return res.status(409).json({
-      error: 'Email already registered',
-      solution: 'Try logging in instead'
+  try {
+    // More robust existence check
+    const userCount = await User.countDocuments({ email: decoded.email }).exec();
+
+    if (userCount > 0) {
+      return res.status(409).json({
+        error: 'Email already registered',
+        solution: 'Try logging in instead'
+      });
+    }
+  } catch (dbErr) {
+    console.error('Database check failed:', {
+      error: dbErr.message,
+      stack: dbErr.stack,
+      connectionState: mongoose.connection.readyState,
+      collectionExists: await mongoose.connection.db.listCollections({ name: 'users' }).hasNext()
+    });
+
+    return res.status(503).json({
+      error: 'Service unavailable',
+      details: process.env.NODE_ENV === 'development' ? dbErr.message : undefined,
+      // Include additional debug info:
+      debug: {
+        collection: 'users',
+        query: { email: decoded.email },
+        connection: mongoose.connection.readyState === 1 ? 'active' : 'inactive'
+      }
     });
   }
-} catch (dbErr) {
-  console.error('Database check failed:', {
-    error: dbErr.message,
-    stack: dbErr.stack,
-    connectionState: mongoose.connection.readyState,
-    collectionExists: await mongoose.connection.db.listCollections({ name: 'users' }).hasNext()
-  });
-
-  return res.status(503).json({
-    error: 'Service unavailable',
-    details: process.env.NODE_ENV === 'development' ? dbErr.message : undefined,
-    // Include additional debug info:
-    debug: {
-      collection: 'users',
-      query: { email: decoded.email },
-      connection: mongoose.connection.readyState === 1 ? 'active' : 'inactive'
-    }
-  });
-}
 
   // 4️⃣ Create user
   try {
@@ -100,7 +100,7 @@ export const completeServiceProvider = async (req, res) => {
       profileImage: decoded.profileImage || 'default-profile.jpg',
       role: 'service_provider',
       password: await bcrypt.hash(password, 10),
-      skills: typeof skills === 'string' 
+      skills: typeof skills === 'string'
         ? skills.split(',').map(s => s.trim()).filter(Boolean)
         : skills,
       location: {
@@ -108,7 +108,7 @@ export const completeServiceProvider = async (req, res) => {
         coordinates: Array.isArray(location) ? location : JSON.parse(location)
       },
       experienceYears: Number(experienceYears),
-      
+
     });
 
     // 5️⃣ Auto-login
@@ -166,7 +166,7 @@ export const completeClient = async (req, res) => {
   };
 
   if (Object.values(missingFields).some(Boolean)) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Missing required fields',
       missing: missingFields
     });
@@ -176,14 +176,14 @@ export const completeClient = async (req, res) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (!decoded?.email || !decoded?.name || decoded?.authMethod !== 'google') {
       throw new Error('Invalid token structure');
     }
   } catch (jwtErr) {
     return res.status(401).json({
-      error: jwtErr.name === 'TokenExpiredError' 
-        ? 'Registration session expired' 
+      error: jwtErr.name === 'TokenExpiredError'
+        ? 'Registration session expired'
         : 'Invalid registration token',
       details: jwtErr.message
     });
@@ -192,7 +192,7 @@ export const completeClient = async (req, res) => {
   // 3️⃣ Check for existing user
   try {
     const userCount = await User.countDocuments({ email: decoded.email }).exec();
-    
+
     if (userCount > 0) {
       return res.status(409).json({
         error: 'Email already registered',
@@ -207,8 +207,8 @@ export const completeClient = async (req, res) => {
 
     return res.status(503).json({
       error: 'Service unavailable',
-      details: process.env.NODE_ENV === 'development' 
-        ? dbErr.message 
+      details: process.env.NODE_ENV === 'development'
+        ? dbErr.message
         : 'Could not verify user status'
     });
   }
@@ -261,5 +261,71 @@ export const completeClient = async (req, res) => {
     }
 
     res.status(500).json(errorResponse);
+  }
+};
+
+
+
+import { validationResult } from 'express-validator';  // MUST ADD THIS
+
+export const loginUser = async (req, res) => {
+  // 1. Validate input
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+
+  const { email, password } = req.body;
+
+  try {
+    // 2. Find user with password
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email'
+      });
+    }
+
+    // 3. Compare passwords - FIXED: using user.password instead of User.password
+    const isMatch = await bcrypt.compare(password, user.password); // <- Critical fix here
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid password'
+      });
+    }
+
+    // 4. Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    // 5. Prepare response
+    const userData = {
+      id: user._id,
+      email: user.email,
+      // Add other safe fields here
+    };
+
+    // 6. Send response
+    return res.status(200).json({
+      success: true,
+      token,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication failed'
+    });
   }
 };
