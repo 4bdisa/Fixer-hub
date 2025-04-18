@@ -283,6 +283,7 @@ export const loginUser = async (req, res) => {
   try {
     // 2. Find user with password
     const user = await User.findOne({ email }).select('+password');
+    console.log('User found:', user); // Debugging line
     
     if (!user) {
       return res.status(401).json({
@@ -292,7 +293,10 @@ export const loginUser = async (req, res) => {
     }
 
     // 3. Compare passwords - FIXED: using user.password instead of User.password
+    
     const isMatch = await bcrypt.compare(password, user.password); // <- Critical fix here
+    console.log('Password comparison:', password, user.password); // Debugging line
+    console.log('Password match:', isMatch); // Debugging line
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -302,10 +306,12 @@ export const loginUser = async (req, res) => {
 
     // 4. Generate JWT token
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email,role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN } 
     );
+
+
 
     // 5. Prepare response
     const userData = {
@@ -317,7 +323,7 @@ export const loginUser = async (req, res) => {
     // 6. Send response
     return res.status(200).json({
       success: true,
-      token,
+      token:token,
       user: userData
     });
 
