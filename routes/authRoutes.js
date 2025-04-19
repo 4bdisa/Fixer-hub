@@ -4,7 +4,7 @@ import {
   completeServiceProvider,
   completeClient
 } from '../controllers/authController.js';
-import { ensureAuth } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middleWares/authMiddleware.js" // Import the authentication middleware
 import { loginUser } from '../controllers/authController.js';
 import jwt from 'jsonwebtoken'; // Import the JWT library
 
@@ -23,18 +23,36 @@ router.get('/auth/google/callback', (req, res, next) => {
       req.logIn(user, (err) => {
         if (err) return next(err);
 
+        // 4. Generate JWT token
+        const token = jwt.sign(
+          { id: user._id, email: user.email, role: user.role },
+          process.env.JWT_SECRET,
+          { expiresIn: process.env.JWT_EXPIRES_IN }
+        );
 
-        return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+        // 5. Prepare response with minimal user data and token
+        const response = {
+          token: token,
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+          },
+        };
+
+        // 6. Send response (no redirect, just JSON with token and user data)
+        return res.redirect(`${process.env.FRONTEND_URL}/oauth/callback?token=${token}&user=${JSON.stringify(response.user)}`);
       });
     } else if (info?.token) {
-      // 🆕 New user - redirect frontend with token to continue onboarding
-      return res.redirect(`${process.env.FRONTEND_URL}/select-role?token=${info.token}`);
+      // 🆕 New user - send token for onboarding
+      return res.status(200).json({ token: info.token });
     } else {
       // ❌ Unknown case
       return res.redirect('/login');
     }
   })(req, res, next);
 });
+
 router.get("/verify", (req, res) => {
   const authHeader = req.headers.authorization;
 
@@ -52,7 +70,7 @@ router.get("/verify", (req, res) => {
   }
 });
 
-// routes/protected.js
+
 
 // Registration Completion Routes
 router.post('/auth/complete/service-provider', completeServiceProvider);
@@ -60,7 +78,7 @@ router.post('/auth/complete/client', completeClient);
 router.post('/login', loginUser);
 
 
-router.get("/dashboard", ensureAuth, (req, res) => {
+router.get("/dashboard", authenticate, (req, res) => {
   res.json(req.user);
 });
 

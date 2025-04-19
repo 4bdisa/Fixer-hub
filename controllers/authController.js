@@ -13,6 +13,7 @@ export const googleOAuthCallback = (req, res) => {
 // Logout User
 export const logoutUser = (req, res) => {
   req.logout(() => {
+    
     res.status(200).json({ message: "User logged out" });
   });
 };
@@ -283,7 +284,7 @@ export const loginUser = async (req, res) => {
   try {
     // 2. Find user with password
     const user = await User.findOne({ email }).select('+password');
-    console.log('User found:', user); // Debugging line
+    
     
     if (!user) {
       return res.status(401).json({
@@ -295,8 +296,7 @@ export const loginUser = async (req, res) => {
     // 3. Compare passwords - FIXED: using user.password instead of User.password
     
     const isMatch = await bcrypt.compare(password, user.password); // <- Critical fix here
-    console.log('Password comparison:', password, user.password); // Debugging line
-    console.log('Password match:', isMatch); // Debugging line
+    
     if (!isMatch) {
       return res.status(401).json({
         success: false,

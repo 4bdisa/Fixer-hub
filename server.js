@@ -6,6 +6,7 @@ import session from "express-session";
 import passport from "passport";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passport.js"; // Passport Config
+import jobs from "./routes/jobs.js"; // Import the jobs route
 
 dotenv.config();
 const app = express();
@@ -37,8 +38,9 @@ app.use(passport.session());
 // Routes
 app.use("/", authRoutes); 
 // app.use("/auth", authRoutes);
-app.use("/api", authRoutes); // Ensure this is the correct path for your API
-
+app.use("/api", authRoutes,jobs );
+ // Ensure this is the correct path for your API
+ app.use("/api", jobs );
 
 // Database & Server
 mongoose

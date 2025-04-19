@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
   },
   rating: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
-  profileImage: String,
+  profileImage:{ type:String},
+  hourlyRate: Number,
+  completedJobs: { type: Number, default: 0 },
 
   // New attributes
   country: { type: String }, 
