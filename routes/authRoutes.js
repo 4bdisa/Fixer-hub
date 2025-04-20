@@ -46,7 +46,7 @@ router.get('/auth/google/callback', (req, res, next) => {
       });
     } else if (info?.token) {
       // 🆕 New user - send token for onboarding
-      return res.status(200).json({ token: info.token });
+      return res.redirect(`${process.env.FRONTEND_URL}/select-role?token=${info.token}`);
     } else {
       // ❌ Unknown case
       return res.redirect('/login');
