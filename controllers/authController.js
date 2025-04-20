@@ -208,9 +208,13 @@ export const completeClient = async (req, res) => {
 
     return res.status(503).json({
       error: 'Service unavailable',
-      details: process.env.NODE_ENV === 'development'
-        ? dbErr.message
-        : 'Could not verify user status'
+      details: process.env.NODE_ENV === 'development' ? dbErr.message : undefined,
+      // Include additional debug info:
+      debug: {
+        collection: 'users',
+        query: { email: decoded.email },
+        connection: mongoose.connection.readyState === 1 ? 'active' : 'inactive'
+      }
     });
   }
 
@@ -219,7 +223,7 @@ export const completeClient = async (req, res) => {
     const newUser = await User.create({
       name: decoded.name,
       email: decoded.email,
-      image: decoded.profileImage || 'default-client.jpg',
+      profileImage: decoded.profileImage || 'default-client.jpg',
       role: 'client',
       password: await bcrypt.hash(password, 10),
       location: {
