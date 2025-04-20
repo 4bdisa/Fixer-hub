@@ -7,13 +7,42 @@ export const getUserProfile = async (req, res) => {
   res.status(200).json(user);
 };
 
-// Update User Profile
-export const updateUserProfile = async (req, res) => {
-  const updatedUser = await User.findByIdAndUpdate(req.user.userId, req.body, { new: true }).select("-password");
-  res.status(200).json(updatedUser);
+// Update Service Provider Profile
+export const updateServiceProviderProfile = async (req, res) => {
+  try {
+    const { skills, keywords, country, workDays, experienceYears, homeService } = req.body;
+
+    // Ensure the user is a service provider
+    if (req.user.role !== "service_provider") {
+      return res.status(403).json({ message: "Access denied. Only service providers can update their profile." });
+    }
+
+    // Prepare the update object
+    const updateData = {
+      ...(skills && { skills: Array.isArray(skills) ? skills : skills.split(",").map(skill => skill.trim()) }),
+      ...(keywords && { keywords: Array.isArray(keywords) ? keywords : keywords.split(",").map(keyword => keyword.trim()) }),
+      ...(country && { country }),
+      ...(workDays && { workDays: Array.isArray(workDays) ? workDays : workDays.split(",").map(day => day.trim()) }),
+      ...(experienceYears !== undefined && { experienceYears: parseInt(experienceYears, 10) }),
+      ...(homeService !== undefined && { homeService: Boolean(homeService) }),
+    };
+
+    // Update the user's profile
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({
+      message: "Profile updated successfully.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "An error occurred while updating the profile." });
+  }
 };
-
-
 
 export const suggestServiceProviders = async (req, res) => {
   try {

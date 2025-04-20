@@ -36,6 +36,7 @@ router.get('/auth/google/callback', (req, res, next) => {
           user: {
             id: user._id,
             email: user.email,
+            profileImage: user.profileImage,
             role: user.role,
           },
         };

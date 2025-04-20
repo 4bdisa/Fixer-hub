@@ -7,6 +7,7 @@ import passport from "passport";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passport.js"; // Passport Config
 import jobs from "./routes/jobs.js"; // Import the jobs route
+import userRoutes from "./routes/userRoutes.js"; // Import the user route
 
 dotenv.config();
 const app = express();
@@ -38,7 +39,7 @@ app.use(passport.session());
 // Routes
 app.use("/", authRoutes); 
 // app.use("/auth", authRoutes);
-app.use("/api", authRoutes,jobs );
+app.use("/api", authRoutes,jobs,userRoutes );
  // Ensure this is the correct path for your API
  app.use("/api", jobs );
 

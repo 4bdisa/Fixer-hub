@@ -1,25 +1,28 @@
 import express from "express";
 import Job from "../models/Job.js";
 import User from "../models/user.js";
-
+import {authenticate} from "../middleWares/authMiddleware.js"; // Import the authentication middleware
 
 const router = express.Router();
 
 // Step 1-6: Create job and fetch sorted providers
-router.post("/create",  async (req, res) => {
+router.post("/jobs/create", authenticate, async (req, res) => {
   try {
     const { description, category, customerLocation, maxPrice, sortBy } = req.body;
     const customer = req.user;
+
+    // Ensure customer is defined
+    if (!customer) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     // Create job
     const newJob = await Job.create({
       description,
       category,
       customer: customer._id,
-      // not in schema but if you want to log this explicitly
-      postedBy: customer.email, 
+      postedBy: customer.email,
     });
-
     // Step 4: Find providers matching the category
     const baseQuery = {
       role: "service_provider",
