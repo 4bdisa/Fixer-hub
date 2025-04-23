@@ -2,17 +2,17 @@ import mongoose from "mongoose";
 
 const serviceRequestSchema = new mongoose.Schema(
   {
-    clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Who posted the job
-    category: { type: String, required: true }, // Example: "Electronics Repair"
-    description: { type: String, required: true }, // Detailed description
-    keywords: [String], // List of keywords (e.g., ["TV", "Phone", "Laptop"])
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    providerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    category: { type: String, required: true },
+    description: { type: String, required: true },
     location: {
       type: { type: String, default: "Point", enum: ["Point"] },
       coordinates: [Number], // [longitude, latitude]
     },
-    budget: { type: Number }, // Optional budget
-    isFixedPrice: { type: Boolean, default: false }, // Fixed price or hourly
-    status: { type: String, enum: ["open", "in-progress", "completed"], default: "open" }, // Job status
+    budget: { type: Number },
+    isFixedPrice: { type: Boolean, default: false },
+    status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending" },
   },
   { timestamps: true }
 );

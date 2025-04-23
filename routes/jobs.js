@@ -1,17 +1,17 @@
 import express from "express";
 import Job from "../models/Job.js";
 import User from "../models/user.js";
-import {authenticate} from "../middleWares/authMiddleware.js"; // Import the authentication middleware
+import { authenticate } from "../middleWares/authMiddleware.js"; // Import the authentication middleware
+import ServiceRequest from "../models/ServiceRequest.js";
 
 const router = express.Router();
 
 // Step 1-6: Create job and fetch sorted providers
 router.post("/jobs/create", authenticate, async (req, res) => {
   try {
-    const { description, category, customerLocation, maxPrice, sortBy } = req.body;
+    const { description, category, customerLocation } = req.body;
     const customer = req.user;
 
-    // Ensure customer is defined
     if (!customer) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -23,43 +23,32 @@ router.post("/jobs/create", authenticate, async (req, res) => {
       customer: customer._id,
       postedBy: customer.email,
     });
-    // Step 4: Find providers matching the category
+
+    // Find providers matching the category
     const baseQuery = {
       role: "service_provider",
       skills: { $in: Array.isArray(category) ? category : [category] },
     };
 
-    // Step 5: Add location filter if provided
     if (customerLocation) {
       baseQuery.location = {
         $near: {
           $geometry: { type: "Point", coordinates: customerLocation },
-          $maxDistance: 10000 // in meters
-        }
+          $maxDistance: 10000, // in meters
+        },
       };
     }
 
+
     const rawProviders = await User.find(baseQuery);
-
-    // Step 5: Filter by price
-    let providers = rawProviders;
-    if (maxPrice) {
-      providers = providers.filter(p => p.hourlyRate && p.hourlyRate <= maxPrice);
-    }
-
-    // Step 5: Sort
-    if (sortBy === "completedJobs") {
-      providers.sort((a, b) => b.completedJobs - a.completedJobs);
-    } else if (sortBy === "hourlyRate") {
-      providers.sort((a, b) => (a.hourlyRate ?? Infinity) - (b.hourlyRate ?? Infinity));
-    }
+    
 
     res.status(200).json({
       jobId: newJob._id,
-      providers,
+      providers: rawProviders,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error in /jobs/create:", err);
     res.status(500).json({ error: "Job creation or provider lookup failed." });
   }
 });

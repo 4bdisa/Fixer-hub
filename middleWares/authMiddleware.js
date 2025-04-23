@@ -3,37 +3,27 @@ import User from "../models/user.js"; // Import User model to fetch user details
 
 export const authenticate = async (req, res, next) => {
   try {
-    // Get the token from Authorization header
     const token = req.headers.authorization?.split(" ")[1];
+    console.log("Token:", token); // Debugging
 
     if (!token) {
       return res.status(401).json({ message: "No Token Provided" });
     }
 
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    console.log('Decoded ID:', decoded.id);
     const user = await User.findById(decoded.id).select("-password");
-    console.log('User Found:', user);
-
-    console.log('Token:', token);
-    console.log('Decoded Token:', decoded);
-    console.log('User:', user);
-
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user; // Attach user data to request
+    req.user = user;
     next();
   } catch (err) {
+    console.error("Authentication Error:", err); // Debugging
     res.status(401).json({ message: "Invalid or Expired Token" });
   }
-
-
-
 };
+
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
