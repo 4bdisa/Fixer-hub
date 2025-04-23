@@ -37,6 +37,11 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use((req, res, next) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  next();
+});
+
 // Routes
 app.use("/", authRoutes);
 app.use("/api", authRoutes, jobs, userRoutes);

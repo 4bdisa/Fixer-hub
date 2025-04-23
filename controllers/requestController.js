@@ -1,5 +1,5 @@
 import ServiceRequest from "../models/ServiceRequest.js";
-import User from "../models/User.js";
+import User from "../models/user.js";
 
 // Controller to create a new service request
 export const createRequest = async (req, res) => {
@@ -29,11 +29,9 @@ export const createRequest = async (req, res) => {
   }
 };
 
-// Controller to get requests for a specific provider
 export const getRequestsForProvider = async (req, res) => {
   try {
     const { providerId, email } = req.params;
-
     let provider;
     if (providerId) {
       provider = await User.findById(providerId);
@@ -41,14 +39,41 @@ export const getRequestsForProvider = async (req, res) => {
       provider = await User.findOne({ email });
     }
 
+    
+
     if (!provider) {
       return res.status(404).json({ message: "Provider not found" });
     }
 
     const requests = await ServiceRequest.find({ providerId: provider._id, status: "pending" }).populate("customer", "name email");
+    
+
     res.status(200).json({ success: true, data: requests });
   } catch (error) {
     console.error("Error fetching requests:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getRequests = async (req, res) => {
+  try {
+    const { providerId } = req.query; // Extract providerId from query parameters
+    
+
+    if (!providerId) {
+      return res.status(400).json({ message: "Provider ID is required" });
+    }
+
+    const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email");
+    
+
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({ message: "No requests found for this provider" });
+    }
+
+    res.status(200).json({ success: true, data: requests });
+  } catch (error) {
+    console.error("Error fetching requests:", error); // Debugging
     res.status(500).json({ success: false, message: error.message });
   }
 };

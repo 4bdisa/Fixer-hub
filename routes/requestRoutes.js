@@ -1,11 +1,14 @@
 import express from "express";
-import { createRequest, getRequestsForProvider, updateRequestStatus } from "../controllers/requestController.js";
-import { authenticate } from "../middleWares/authMiddleware.js";
+import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests } from "../controllers/requestController.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // Route to create a new service request
 router.post("/requests", authenticate, createRequest);
+
+// Route to get all requests
+router.get("/requests", authenticate, getRequests);
 
 // Route to get requests for a specific provider
 router.get("/requests/:providerId?", authenticate, getRequestsForProvider);
