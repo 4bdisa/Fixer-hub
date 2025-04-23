@@ -2,6 +2,7 @@ import express from "express";
 import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests } from "../controllers/requestController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 
+
 const router = express.Router();
 
 // Route to create a new service request
@@ -11,8 +12,8 @@ router.post("/requests", authenticate, createRequest);
 router.get("/requests", authenticate, getRequests);
 
 // Route to get requests for a specific provider
-router.get("/requests/:providerId?", authenticate, getRequestsForProvider);
-router.get("/requests/email/:email", authenticate, getRequestsForProvider);
+router.get("/requests/get", authenticate, getRequestsForProvider);
+
 
 // Route to update the status of a service request
 router.patch("/requests/:requestId", authenticate, updateRequestStatus);

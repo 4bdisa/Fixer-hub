@@ -1,10 +1,10 @@
-import ServiceRequest from "../models/ServiceRequest.js";
+import jwt from "jsonwebtoken";
+import ServiceRequest from "../models/serviceRequest.js";
 import User from "../models/user.js";
 
 // Controller to create a new service request
 export const createRequest = async (req, res) => {
   try {
-
     const { category, description, providerId, location, budget, isFixedPrice } = req.body;
 
     if (!providerId) {
@@ -13,7 +13,7 @@ export const createRequest = async (req, res) => {
 
     const newRequest = await ServiceRequest.create({
       customer: req.user._id,
-      providerId,
+      providerId, // Ensure this is correctly set
       category,
       description,
       location,
@@ -21,7 +21,7 @@ export const createRequest = async (req, res) => {
       isFixedPrice,
       status: "pending",
     });
-
+    console.log("New service request created:", newRequest); // Debugging
     res.status(201).json({ success: true, data: newRequest });
   } catch (error) {
     console.error("Error creating service request:", error);
@@ -31,41 +31,43 @@ export const createRequest = async (req, res) => {
 
 export const getRequestsForProvider = async (req, res) => {
   try {
-    const { providerId, email } = req.params;
-    let provider;
-    if (providerId) {
-      provider = await User.findById(providerId);
-    } else if (email) {
-      provider = await User.findOne({ email });
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
     }
 
+    // Decode the token to extract the provider ID
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const providerId = decoded.id; // Extract the `id` field from the token
     
 
-    if (!provider) {
-      return res.status(404).json({ message: "Provider not found" });
+    if (!providerId) {
+      return res.status(400).json({ message: "Invalid token. Provider ID is missing." });
     }
 
-    const requests = await ServiceRequest.find({ providerId: provider._id, status: "pending" }).populate("customer", "name email");
-    
+    // Fetch requests for the provider
+    const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email");
+
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({ message: "No requests found for this provider." });
+    }
 
     res.status(200).json({ success: true, data: requests });
   } catch (error) {
     console.error("Error fetching requests:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch requests." });
   }
 };
 
 export const getRequests = async (req, res) => {
   try {
     const { providerId } = req.query; // Extract providerId from query parameters
-    
 
     if (!providerId) {
       return res.status(400).json({ message: "Provider ID is required" });
     }
 
-    const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email");
-    
+    const requests = await ServiceRequest.find({ providerId }).populate("customer", "name email");
 
     if (!requests || requests.length === 0) {
       return res.status(404).json({ message: "No requests found for this provider" });
