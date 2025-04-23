@@ -36,20 +36,17 @@ export const getRequestsForProvider = async (req, res) => {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    // Decode the token to extract the provider ID
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const providerId = decoded.id; // Extract the `id` field from the token
-    
+    const providerId = decoded.id;
 
     if (!providerId) {
       return res.status(400).json({ message: "Invalid token. Provider ID is missing." });
     }
 
-    // Fetch requests for the provider
     const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email");
 
     if (!requests || requests.length === 0) {
-      return res.status(404).json({ message: "No requests found for this provider." });
+      return res.status(404).json({ message: "No requests found for this provider" });
     }
 
     res.status(200).json({ success: true, data: requests });
