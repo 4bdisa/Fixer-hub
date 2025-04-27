@@ -11,7 +11,7 @@ const serviceRequestSchema = new mongoose.Schema({
   },
   budget: { type: Number, required: false },
   isFixedPrice: { type: Boolean, default: false },
-  status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending" },
+  status: { type: String, enum: ["pending", "accepted", "declined","completed"], default: "pending" },
 }, { timestamps: true });
 
 // Check if the model is already defined

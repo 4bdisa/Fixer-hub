@@ -1,6 +1,7 @@
 import express from "express";
 import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests, getJobHistory } from "../controllers/requestController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
+import { deleteRequest } from "../controllers/requestController.js";
 import { searchProviders, selectProvider } from "../controllers/requestController.js";
 import { getAcceptedRequestsByProvider } from "../controllers/requestController.js";
 
@@ -27,5 +28,6 @@ router.get("/requests/history", authenticate, getJobHistory);
 
 router.get("/requests/accepted", authenticate, getAcceptedRequestsByProvider);
 
+router.delete("/requests/:requestId", authenticate, deleteRequest);
 
 export default router;

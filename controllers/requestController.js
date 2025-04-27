@@ -1,5 +1,4 @@
-import jwt from "jsonwebtoken";
-import ServiceRequest from "../models/serviceRequest.js";
+import ServiceRequest from "../models/ServiceRequest.js"; // Ensure this is declared only once
 import User from "../models/user.js";
 
 // Controller to create a new service request
@@ -206,5 +205,33 @@ export const getAcceptedRequestsByProvider = async (req, res) => {
   } catch (error) {
     console.error("Error fetching accepted requests:", error);
     res.status(500).json({ success: false, message: "Failed to fetch accepted requests" });
+  }
+};
+
+
+// Delete a service request
+export const deleteRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    // Find the request by ID
+    const request = await ServiceRequest.findById(requestId);
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+
+    // Ensure the authenticated user is the owner of the request
+    if (request.customer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized to delete this request" });
+    }
+
+    // Delete the request
+    await request.deleteOne();
+
+    res.status(200).json({ success: true, message: "Request deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting request:", error);
+    res.status(500).json({ success: false, message: "Failed to delete the request" });
   }
 };
