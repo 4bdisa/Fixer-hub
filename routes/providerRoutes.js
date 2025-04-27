@@ -1,10 +1,10 @@
 import express from "express";
-import { matchProviders } from "../controllers/providerController.js";
-import { protect } from "../middlewares/authMiddleware.js";
+import { searchProviders } from "../controllers/providerController.js";
+import { authenticate } from "../middlewares/authMiddleware.js"; // Assuming you have an authentication middleware
 
 const router = express.Router();
 
-// 📌 Find matching service providers
-router.get("/match", protect, matchProviders);
+// Route to search for service providers
+router.post("/search-providers", authenticate, searchProviders);
 
 export default router;

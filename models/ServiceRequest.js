@@ -9,7 +9,7 @@ const serviceRequestSchema = new mongoose.Schema({
     type: { type: String, default: "Point", enum: ["Point"] },
     coordinates: [Number], // [longitude, latitude]
   },
-  budget: { type: Number, required: true },
+  budget: { type: Number, required: false },
   isFixedPrice: { type: Boolean, default: false },
   status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending" },
 }, { timestamps: true });

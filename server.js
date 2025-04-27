@@ -6,7 +6,7 @@ import session from "express-session";
 import passport from "passport";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passport.js"; // Passport Config
-import jobs from "./routes/jobs.js"; // Import the jobs route
+
 import userRoutes from "./routes/userRoutes.js"; // Import the user route
 import requestRoutes from "./routes/requestRoutes.js"; // Import the request route
 
@@ -44,8 +44,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use("/", authRoutes);
-app.use("/api", authRoutes, jobs, userRoutes);
-app.use("/api", jobs);
+app.use("/api", authRoutes, userRoutes);
 app.use("/api/v1", requestRoutes);
 
 // Database & Server
