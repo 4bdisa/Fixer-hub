@@ -192,3 +192,19 @@ export const getJobHistory = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch job history" });
   }
 };
+
+export const getAcceptedRequestsByProvider = async (req, res) => {
+  try {
+    const providerId = req.user._id; // Assuming the provider is authenticated and their ID is available
+
+    // Fetch requests where the providerId matches and the status is "accepted"
+    const requests = await ServiceRequest.find({ providerId, status: "accepted" })
+      .populate("customer", "name email") // Populate customer details
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: requests });
+  } catch (error) {
+    console.error("Error fetching accepted requests:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch accepted requests" });
+  }
+};
