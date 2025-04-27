@@ -1,5 +1,6 @@
 import ServiceRequest from "../models/ServiceRequest.js"; // Ensure this is declared only once
 import User from "../models/user.js";
+import jwt from "jsonwebtoken"; // Import jwt for token verification
 
 // Controller to create a new service request
 
@@ -42,13 +43,15 @@ export const selectProvider = async (req, res) => {
   try {
     const { providerId, description, category, location, budget, isFixedPrice } = req.body;
 
+    // Ensure the customer is authenticated
     const customer = req.user;
     if (!customer) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    // Create a service request directly
+
+    // Create a service request using the customer's ID from the auth token
     const newRequest = await ServiceRequest.create({
-      customer: customer._id,
+      customer: customer._id, // Use the customer's ID from the token
       providerId,
       category,
       description,
@@ -73,13 +76,15 @@ export const createRequest = async (req, res) => {
   try {
     const { category, description, providerId, location, budget, isFixedPrice } = req.body;
 
+    // Ensure the provider ID is provided
     if (!providerId) {
       return res.status(400).json({ success: false, message: "Provider ID is required" });
     }
 
+    // Create a service request using the customer's ID from the auth token
     const newRequest = await ServiceRequest.create({
-      customer: req.user._id,
-      providerId, // Ensure this is correctly set
+      customer: req.user._id, // Use the customer's ID from the token
+      providerId,
       category,
       description,
       location,
@@ -87,6 +92,7 @@ export const createRequest = async (req, res) => {
       isFixedPrice,
       status: "pending",
     });
+
     console.log("New service request created:", newRequest); // Debugging
     res.status(201).json({ success: true, data: newRequest });
   } catch (error) {
@@ -178,11 +184,9 @@ export const updateRequestStatus = async (req, res) => {
 
 export const getJobHistory = async (req, res) => {
   try {
-    const userId = req.user._id; // Assuming the user is authenticated and their ID is available
-
-    // Fetch requests for the user and populate provider details
+    const userId = req.user._id; // Ensure `req.user` is populated by the `authenticate` middleware
     const requests = await ServiceRequest.find({ customer: userId })
-      .populate("providerId", "name photo") // Populate the provider's name and photo
+      .populate("providerId", "name photo")
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: requests });
