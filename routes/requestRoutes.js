@@ -1,9 +1,10 @@
 import express from "express";
-import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests, getJobHistory } from "../controllers/requestController.js";
+import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests, getJobHistory, getProviderJobHistory } from "../controllers/requestController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { deleteRequest } from "../controllers/requestController.js";
 import { searchProviders, selectProvider } from "../controllers/requestController.js";
 import { getAcceptedRequestsByProvider } from "../controllers/requestController.js";
+import { completeRequest } from "../controllers/requestController.js";
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.get("/requests/get", authenticate, getRequestsForProvider);
 
 // Route to update the status of a service request
 router.patch("/requests/:requestId/status", authenticate, updateRequestStatus);
+router.patch("/requests/complete/:requestId", authenticate, completeRequest);
 
 
 router.get("/requests/history", authenticate, getJobHistory);
@@ -29,5 +31,8 @@ router.get("/requests/history", authenticate, getJobHistory);
 router.get("/requests/accepted", authenticate, getAcceptedRequestsByProvider);
 
 router.delete("/requests/:requestId", authenticate, deleteRequest);
+
+// Route to fetch job history for providers
+router.get("/provider/history", authenticate, getProviderJobHistory);
 
 export default router;

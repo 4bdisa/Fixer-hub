@@ -5,17 +5,11 @@ const serviceRequestSchema = new mongoose.Schema({
   providerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   category: { type: String, required: true },
   description: { type: String, required: true },
-  location: {
-    type: { type: String, default: "Point", enum: ["Point"] },
-    coordinates: [Number], // [longitude, latitude]
-  },
-  budget: { type: Number, required: false },
-  isFixedPrice: { type: Boolean, default: false },
-  status: { type: String, enum: ["pending", "accepted", "declined","completed"], default: "pending" },
+  status: { type: String, enum: ["pending", "accepted", "declined", "completed"], default: "pending" },
+  reviewId: { type: mongoose.Schema.Types.ObjectId, ref: "Review" }, // Reference to the Review schema
+  updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-// Check if the model is already defined
-serviceRequestSchema.index({ location: "2dsphere" });
-const ServiceRequest = mongoose.models.ServiceRequest || mongoose.model("ServiceRequest", serviceRequestSchema);
+const ServiceRequest = mongoose.model("ServiceRequest", serviceRequestSchema);
 
 export default ServiceRequest;
