@@ -33,6 +33,6 @@ router.get("/requests/accepted", authenticate, getAcceptedRequestsByProvider);
 router.delete("/requests/:requestId", authenticate, deleteRequest);
 
 // Route to fetch job history for providers
-router.get("/provider/history", authenticate, getProviderJobHistory);
+router.get("/requests/provider/history", authenticate, getProviderJobHistory);
 
 export default router;

@@ -6,14 +6,17 @@ import User from '../models/user.js';
 
 // Handle Google OAuth Login Success
 export const googleOAuthCallback = (req, res) => {
-  const token = generateToken(req.user._id, req.user.role);
-  res.json({ token, user: req.user }); // Send token and user details to frontend
+  // Generate token with userId, role, and name
+  const token = generateToken(req.user._id, req.user.role, req.user.name);
+
+  // Send token and user details to frontend
+  res.json({ token, user: req.user });
 };
 
 // Logout User
 export const logoutUser = (req, res) => {
   req.logout(() => {
-    
+
     res.status(200).json({ message: "User logged out" });
   });
 };
@@ -274,70 +277,45 @@ export const completeClient = async (req, res) => {
 import { validationResult } from 'express-validator';  // MUST ADD THIS
 
 export const loginUser = async (req, res) => {
-  // 1. Validate input
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array()
-    });
-  }
-
   const { email, password } = req.body;
 
   try {
-    // 2. Find user with password
-    const user = await User.findOne({ email }).select('+password');
-    
-    
+    // Find user with password
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email'
-      });
+      return res.status(401).json({ success: false, error: "Invalid email" });
     }
 
-    // 3. Compare passwords - FIXED: using user.password instead of User.password
-    
-    const isMatch = await bcrypt.compare(password, user.password); // <- Critical fix here
-    
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid password'
-      });
+      return res.status(401).json({ success: false, error: "Invalid password" });
     }
 
-    // 4. Generate JWT token
+    // Generate JWT token with user's name
     const token = jwt.sign(
-      { id: user._id, email: user.email,role: user.role },
+      { id: user._id, name: user.name, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN } 
+      { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-
-
-    // 5. Prepare response
+    // Prepare response
     const userData = {
       id: user._id,
+      name: user.name,
       email: user.email,
-      profileImage: user.profileImage ,
-      role: user.role
-      // Add other safe fields here
+      profileImage: user.profileImage,
+      role: user.role,
     };
 
-    // 6. Send response
+    // Send response
     return res.status(200).json({
       success: true,
-      token:token,
-      user: userData
+      token,
+      user: userData,
     });
-
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Authentication failed'
-    });
+    console.error("Login error:", error);
+    return res.status(500).json({ success: false, error: "Authentication failed" });
   }
 };

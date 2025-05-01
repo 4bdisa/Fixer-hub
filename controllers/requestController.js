@@ -206,7 +206,7 @@ export const getProviderJobHistory = async (req, res) => {
       .populate("reviewId", "rating comment") // Populate review details
       .sort({ updatedAt: -1 }); // Sort by most recently updated
 
-    console.log("Provider Job History Data:", requests); // Debugging
+  
     res.status(200).json({ success: true, data: requests });
   } catch (error) {
     console.error("Error fetching provider job history:", error);
