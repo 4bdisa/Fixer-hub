@@ -16,12 +16,9 @@ export const googleOAuthCallback = (req, res) => {
 // Logout User
 export const logoutUser = (req, res) => {
   req.logout(() => {
-
     res.status(200).json({ message: "User logged out" });
   });
 };
-
-
 
 export const completeServiceProvider = async (req, res) => {
   // 1️⃣ Validate request

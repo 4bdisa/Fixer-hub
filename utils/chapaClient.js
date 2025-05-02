@@ -4,8 +4,8 @@ const chapa = axios.create({
   baseURL: 'https://api.chapa.co/v1',
   headers: {
     Authorization: `Bearer ${process.env.CHAPA_API_KEY}`,
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
 export const initiatePayment = async (data) => {

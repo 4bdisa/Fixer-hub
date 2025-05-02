@@ -34,7 +34,6 @@ export const authorizeRoles = (...roles) => {
   };
 };
 
-
 // middlewares/authMiddleware.js
 export const ensureAuth = (req, res, next) => {
   if (req.isAuthenticated()) return next();

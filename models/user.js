@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   experienceYears: { type: Number, default: 0 },
   homeService: { type: Boolean, default: false },
   workDays: [String],
+  fhCoins: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
 }, { timestamps: true });
 
