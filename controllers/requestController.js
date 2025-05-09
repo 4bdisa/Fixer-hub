@@ -13,26 +13,38 @@ export const searchProviders = async (req, res) => {
       return res.status(400).json({ error: "Category and customer location are required." });
     }
 
-    // Build the query to find providers
-    const query = {
-      role: "service_provider", // Assuming service providers have this role
-      skills: { $in: Array.isArray(category) ? category : [category] }, // Match skills with the category
-    };
+    const [longitude, latitude] = customerLocation;
 
-    // Add location-based filtering if customerLocation is provided
-    if (customerLocation) {
-      query.location = {
-        $near: {
-          $geometry: { type: "Point", coordinates: customerLocation }, // [longitude, latitude]
-          $maxDistance: 10000, // 10 km radius
+    // Use $geoNear to calculate distance
+    const providers = await User.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [longitude, latitude] }, // Customer's live location
+          distanceField: "distance", // Calculate distance
+          spherical: true,
         },
-      };
-    }
+      },
+      {
+        $match: {
+          role: "service_provider",
+          skills: { $in: Array.isArray(category) ? category : [category] },
+          availability: true,
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          rating: 1,
+          hourlyRate: 1,
+          completedJobs: 1,
+          experience: 1, // Ensure this field is included
+          distance: 1,
+        },
+      },
+    ]);
 
-    // Query the database for matching providers
-    const providers = await User.find(query).select("name email rating hourlyRate completedJobs");
 
-    // Return the providers
     res.status(200).json({ success: true, providers });
   } catch (error) {
     console.error("Error searching providers:", error);
@@ -94,7 +106,6 @@ export const createRequest = async (req, res) => {
       status: "pending",
     });
 
-    console.log("New service request created:", newRequest); // Debugging
     res.status(201).json({ success: true, data: newRequest });
   } catch (error) {
     console.error("Error creating service request:", error);
@@ -176,6 +187,13 @@ export const updateRequestStatus = async (req, res) => {
     request.status = status;
     await request.save();
 
+    // Update the provider's availability based on the status
+    const provider = await User.findById(request.providerId);
+    if (provider) {
+      provider.availability = status === "accepted" ? false : true; // Set availability based on status
+      await provider.save();
+    }
+
     res.status(200).json({ success: true, message: `Request ${status} successfully`, data: request });
   } catch (error) {
     console.error("Error updating request status:", error);
@@ -206,7 +224,7 @@ export const getProviderJobHistory = async (req, res) => {
       .populate("reviewId", "rating comment") // Populate review details
       .sort({ updatedAt: -1 }); // Sort by most recently updated
 
-  
+
     res.status(200).json({ success: true, data: requests });
   } catch (error) {
     console.error("Error fetching provider job history:", error);
@@ -263,8 +281,6 @@ export const completeRequest = async (req, res) => {
     const { requestId } = req.params;
     const { rating, comment } = req.body;
 
-    console.log("Request Body:", req.body); // Debugging
-
     if (!rating) {
       return res.status(400).json({ success: false, message: "Rating is required." });
     }
@@ -291,6 +307,14 @@ export const completeRequest = async (req, res) => {
     request.status = "completed";
     request.reviewId = newReview._id;
     await request.save();
+
+    // Update the provider's availability and increment completedJobs
+    const provider = await User.findById(request.providerId);
+    if (provider) {
+      provider.availability = true;
+      provider.completedJobs = (provider.completedJobs || 0) + 1; // Increment completedJobs
+      await provider.save();
+    }
 
     res.status(200).json({ success: true, message: "Request completed successfully." });
   } catch (error) {

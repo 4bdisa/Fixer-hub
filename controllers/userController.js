@@ -44,15 +44,17 @@ export const updateServiceProviderProfile = async (req, res) => {
   }
 };
 
-
-
 // Get FH Coins
+// filepath: c:\Users\4bdisa\Desktop\fixerhub\backend\controllers\userController.js
 export const getFhCoins = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("fhCoins");
-    res.json({ fhCoins: user.fhCoins });
+      const user = await User.findById(req.user.id).select("fhCoins");
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
+      res.status(200).json({ fhCoins: user.fhCoins });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch fh-coin balance" });
+      res.status(500).json({ error: "Failed to fetch fh-coin balance" });
   }
 };
 

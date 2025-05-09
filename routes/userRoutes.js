@@ -8,6 +8,8 @@ const router = express.Router();
 router.put("/profile/update", authenticate, updateServiceProviderProfile);
 
 // Route to get FH coins
-router.get("/fh-coins",authenticate , getFhCoins);
+router.get("/user/fh-coins", authenticate, getFhCoins);
+
+// Example Express.js backend route
 
 export default router;

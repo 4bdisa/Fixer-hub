@@ -1,9 +1,6 @@
 import express from 'express';
 import passport from '../config/passport.js';  // Import the passport configuration
-import {
-  completeServiceProvider,
-  completeClient
-} from '../controllers/authController.js';
+import {completeServiceProvider,completeClient} from '../controllers/authController.js';
 import { authenticate } from "../middleWares/authMiddleware.js" // Import the authentication middleware
 import { loginUser } from '../controllers/authController.js';
 import jwt from 'jsonwebtoken'; // Import the JWT library
