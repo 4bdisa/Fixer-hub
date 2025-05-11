@@ -4,7 +4,8 @@ import { authenticate } from "../middlewares/authMiddleware.js";
 import { deleteRequest } from "../controllers/requestController.js";
 import { searchProviders, selectProvider } from "../controllers/requestController.js";
 import { getAcceptedRequestsByProvider } from "../controllers/requestController.js";
-import { completeRequest } from "../controllers/requestController.js";
+import { completeRequest, getCategories } from "../controllers/requestController.js";
+import { getRequestCount } from "../controllers/requestController.js";
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.post("/requests", authenticate, createRequest);
 
 // Route to get all requests
 router.get("/requests", authenticate, getRequests);
+router.get("/categories", authenticate, getCategories);
 
 // Route to get requests for a specific provider
 router.get("/requests/get", authenticate, getRequestsForProvider);
@@ -34,5 +36,8 @@ router.delete("/requests/:requestId", authenticate, deleteRequest);
 
 // Route to fetch job history for providers
 router.get("/requests/provider/history", authenticate, getProviderJobHistory);
+
+// Route to get request count for providers
+router.get("/provider/count", authenticate, getRequestCount);
 
 export default router;

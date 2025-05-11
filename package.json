@@ -27,7 +27,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "react-router-dom": "^7.5.3",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@types/express-validator": "^2.20.33",

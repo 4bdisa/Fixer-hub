@@ -322,3 +322,33 @@ export const completeRequest = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to complete request." });
   }
 };
+
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await User.aggregate([
+      { $match: { role: "service_provider" } }, // Only service providers
+      { $unwind: "$skills" }, // Unwind the skills array
+      { $group: { _id: "$skills" } }, // Group by skill
+      { $project: { _id: 0, category: "$_id" } }, // Format the response
+    ]);
+
+    res.status(200).json({ success: true, categories });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch categories." });
+  }
+};
+
+export const getRequestCount = async (req, res) => {
+  try {
+    const count = await ServiceRequest.countDocuments({
+      providerId: req.user.id,
+      status: "pending", // Only count pending requests
+    });
+
+    res.status(200).json({ success: true, count });
+  } catch (error) {
+    console.error("Error fetching request count:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch request count." });
+  }
+};

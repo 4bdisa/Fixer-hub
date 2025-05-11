@@ -7,10 +7,10 @@ export const createTransaction = async (req, res) => {
   try {
     const { totalAmount } = req.body;
 
-    // Generate unique transaction reference
+    // Generate a unique transaction reference
     const txRef = `TX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // Create transaction record
+    // Create a transaction record
     const transaction = new Transaction({
       payer: req.user.id,
       totalAmount,
@@ -20,10 +20,10 @@ export const createTransaction = async (req, res) => {
     // Initialize payment with Chapa
     const paymentData = {
       amount: totalAmount,
-      currency: 'ETB',
+      currency: "ETB",
       email: req.user.email,
       tx_ref: txRef,
-      callback_url: `${process.env.BASE_URL}/api/transactions/webhook`,
+      callback_url: `${process.env.BASE_URL}/api/transactions/webhook`, // Webhook for payment verification
       metadata: {
         transactionId: transaction._id.toString(),
       },
@@ -34,10 +34,10 @@ export const createTransaction = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      checkoutUrl: chapaResponse.data.checkout_url,
+      checkoutUrl: chapaResponse.data.checkout_url, // Return Chapa checkout URL
     });
   } catch (error) {
-    console.error('Payment Initialization Error:', error);
+    console.error("Payment Initialization Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -53,29 +53,26 @@ export const handleWebhook = async (req, res) => {
     const transaction = await Transaction.findOne({ chapaTxRef: tx_ref });
 
     if (!transaction) {
-      return res.status(404).json({ error: 'Transaction not found' });
+      return res.status(404).json({ error: "Transaction not found" });
     }
 
     transaction.status = status;
 
-    if (status === 'success') {
-      // Calculate fhCoins (e.g., 1 ETB = 10 fhCoins)
+    if (status === "success") {
+      // Calculate FH-Coins (e.g., 1 ETB = 10 FH-Coins)
       const fhCoins = transaction.totalAmount * 10;
 
-      // Update user's fhCoin balance
+      // Update user's FH-Coin balance
       const user = await User.findById(transaction.payer);
       user.fhCoins = (user.fhCoins || 0) + fhCoins;
       await user.save();
-
-      // Update transaction record
-      transaction.fhCoins = fhCoins;
     }
 
     await transaction.save();
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Webhook Error:', error);
-    res.status(500).json({ error: error.message });
+    console.error("Webhook Handling Error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
