@@ -16,11 +16,13 @@ const userSchema = new mongoose.Schema({
   keywords: [String],
   completedJobs: { type: Number, default: 0 },
   experienceYears: { type: Number, default: 0 },
+  phoneNumber: { type: Number, default: 0 },
   homeService: { type: Boolean, default: false },
   workDays: [String],
   fhCoins: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
   availability: { type: Boolean, default: true },
+  
 }, { timestamps: true });
 
 userSchema.index({ location: '2dsphere' });

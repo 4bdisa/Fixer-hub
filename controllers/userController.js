@@ -10,7 +10,7 @@ export const getUserProfile = async (req, res) => {
 // Update Service Provider Profile
 export const updateServiceProviderProfile = async (req, res) => {
   try {
-    const { skills, keywords, country, workDays, experienceYears, homeService } = req.body;
+    const { skills, keywords, country, workDays, experienceYears,phoneNumber, homeService } = req.body;
 
     // Ensure the user is a service provider
     if (req.user.role !== "service_provider") {
@@ -24,6 +24,7 @@ export const updateServiceProviderProfile = async (req, res) => {
       ...(country && { country }),
       ...(workDays && { workDays: Array.isArray(workDays) ? workDays : workDays.split(",").map(day => day.trim()) }),
       ...(experienceYears !== undefined && { experienceYears: parseInt(experienceYears, 10) }),
+      ...(phoneNumber !== undefined && { phoneNumber: parseInt(phoneNumber, 10) }),
       ...(homeService !== undefined && { homeService: Boolean(homeService) }),
     };
 
@@ -48,13 +49,13 @@ export const updateServiceProviderProfile = async (req, res) => {
 // filepath: c:\Users\4bdisa\Desktop\fixerhub\backend\controllers\userController.js
 export const getFhCoins = async (req, res) => {
   try {
-      const user = await User.findById(req.user.id).select("fhCoins");
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
-      }
-      res.status(200).json({ fhCoins: user.fhCoins });
+    const user = await User.findById(req.user.id).select("fhCoins");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({ fhCoins: user.fhCoins });
   } catch (error) {
-      res.status(500).json({ error: "Failed to fetch fh-coin balance" });
+    res.status(500).json({ error: "Failed to fetch fh-coin balance" });
   }
 };
 

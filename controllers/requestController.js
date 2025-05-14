@@ -281,45 +281,69 @@ export const completeRequest = async (req, res) => {
     const { requestId } = req.params;
     const { rating, comment } = req.body;
 
+    // Validate required fields
     if (!rating) {
-      return res.status(400).json({ success: false, message: "Rating is required." });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Rating is required." 
+      });
     }
 
+    // Find the request
     const request = await ServiceRequest.findById(requestId);
-
     if (!request) {
-      return res.status(404).json({ success: false, message: "Request not found." });
+      return res.status(404).json({ 
+        success: false, 
+        message: "Request not found." 
+      });
     }
 
-    // Ensure the authenticated user is the owner of the request
+    // Authorization check
     if (request.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: "Unauthorized to complete this request." });
+      return res.status(403).json({ 
+        success: false, 
+        message: "Unauthorized to complete this request." 
+      });
     }
 
-    // Create a new review
+    // Create review
     const newReview = await Review.create({
       userId: req.user._id,
+      providerId: request.providerId, // Added provider reference
+      serviceRequestId: requestId,    // Added request reference
       rating,
-      comment: comment || "No comment provided.", // Default to "No comment provided."
+      comment: comment || "No comment provided.",
     });
 
-    // Update the service request with the review ID and mark it as completed
+    // Update the service request
     request.status = "completed";
     request.reviewId = newReview._id;
     await request.save();
 
-    // Update the provider's availability and increment completedJobs
+    // Update provider's status and stats
     const provider = await User.findById(request.providerId);
     if (provider) {
-      provider.availability = true;
-      provider.completedJobs = (provider.completedJobs || 0) + 1; // Increment completedJobs
+      provider.available = true;      // Set available to true
+      provider.availability = true;   // Maintain backward compatibility
+      provider.completedJobs = (provider.completedJobs || 0) + 1;
       await provider.save();
     }
 
-    res.status(200).json({ success: true, message: "Request completed successfully." });
+    res.status(200).json({ 
+      success: true, 
+      message: "Request completed successfully.",
+      data: {
+        request,
+        review: newReview
+      }
+    });
   } catch (error) {
     console.error("Error completing request:", error);
-    res.status(500).json({ success: false, message: "Failed to complete request." });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to complete request.",
+      error: error.message 
+    });
   }
 };
 
@@ -350,5 +374,47 @@ export const getRequestCount = async (req, res) => {
   } catch (error) {
     console.error("Error fetching request count:", error);
     res.status(500).json({ success: false, message: "Failed to fetch request count." });
+  }
+};
+
+
+// controllers/requestController.js
+
+
+
+export const markAsPaidAndGetContact = async (req, res) => {
+  const requestId = req.params.id;
+  const userId = req.user._id; // Assuming passport is used for authentication
+
+  try {
+    const request = await ServiceRequest.findById(requestId).populate("providerId");
+
+    if (!request) return res.status(404).json({ message: "Request not found" });
+    if (String(request.customer) !== String(userId))
+      return res.status(403).json({ message: "Not authorized" });
+
+    if (request.paid)
+      return res.status(200).json({
+        contact: request.providerId.phoneNumber,
+        message: "Already paid",
+      });
+
+    const user = await User.findById(userId);
+    if (user.fhCoins < 5)
+      return res.status(400).json({ message: "Insufficient FH-Coins" });
+
+    user.fhCoins -= 5;
+    request.paid = true;
+
+    await user.save();
+    await request.save();
+
+    return res.status(200).json({
+      contact: request.providerId.phoneNumber,
+      message: "Contact information retrieved successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
   }
 };

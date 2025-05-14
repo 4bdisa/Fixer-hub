@@ -8,6 +8,7 @@ const serviceRequestSchema = new mongoose.Schema({
   status: { type: String, enum: ["pending", "accepted", "declined", "completed"], default: "pending" },
   reviewId: { type: mongoose.Schema.Types.ObjectId, ref: "Review" }, // Reference to the Review schema
   updatedAt: { type: Date, default: Date.now },
+  paid: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const ServiceRequest = mongoose.model("ServiceRequest", serviceRequestSchema);

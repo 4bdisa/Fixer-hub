@@ -6,7 +6,7 @@ import { searchProviders, selectProvider } from "../controllers/requestControlle
 import { getAcceptedRequestsByProvider } from "../controllers/requestController.js";
 import { completeRequest, getCategories } from "../controllers/requestController.js";
 import { getRequestCount } from "../controllers/requestController.js";
-
+import { markAsPaidAndGetContact } from "../controllers/requestController.js";
 const router = express.Router();
 
 router.post("/search-providers", authenticate, searchProviders);
@@ -39,5 +39,7 @@ router.get("/requests/provider/history", authenticate, getProviderJobHistory);
 
 // Route to get request count for providers
 router.get("/provider/count", authenticate, getRequestCount);
+
+router.patch("/requests/:id/pay", authenticate, markAsPaidAndGetContact);
 
 export default router;
