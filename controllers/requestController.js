@@ -265,6 +265,13 @@ export const deleteRequest = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized to delete this request" });
     }
 
+    // Update the provider's availability to true
+    const provider = await User.findById(request.providerId);
+    if (provider) {
+      provider.availability = true;
+      await provider.save();
+    }
+
     // Delete the request
     await request.deleteOne();
 
@@ -282,26 +289,26 @@ export const completeRequest = async (req, res) => {
 
     // Validate required fields
     if (!rating) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Rating is required." 
+      return res.status(400).json({
+        success: false,
+        message: "Rating is required."
       });
     }
 
     // Find the request
     const request = await ServiceRequest.findById(requestId);
     if (!request) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Request not found." 
+      return res.status(404).json({
+        success: false,
+        message: "Request not found."
       });
     }
 
     // Authorization check
     if (request.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Unauthorized to complete this request." 
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized to complete this request."
       });
     }
 
@@ -328,8 +335,8 @@ export const completeRequest = async (req, res) => {
       await provider.save();
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: "Request completed successfully.",
       data: {
         request,
@@ -338,10 +345,10 @@ export const completeRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error completing request:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Failed to complete request.",
-      error: error.message 
+      error: error.message
     });
   }
 };
