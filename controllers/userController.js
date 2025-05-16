@@ -1,35 +1,80 @@
 import User from "../models/user.js";
 
+// Function to capitalize the first letter of a string
+const capitalizeFirstLetter = (str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 // Get User Profile
 export const getUserProfile = async (req, res) => {
-  const user = await User.findById(req.user.userId).select("-password");
-  if (!user) return res.status(404).json({ message: "User not found" });
-  res.status(200).json(user);
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Failed to fetch user profile" });
+  }
 };
 
 // Update Service Provider Profile
 export const updateServiceProviderProfile = async (req, res) => {
   try {
-    const { skills, keywords, country, workDays, experienceYears,phoneNumber, homeService } = req.body;
+    const {
+      skills,
+      keywords,
+      country,
+      workDays,
+      experienceYears,
+      phoneNumber,
+      homeService,
+    } = req.body;
 
     // Ensure the user is a service provider
     if (req.user.role !== "service_provider") {
-      return res.status(403).json({ message: "Access denied. Only service providers can update their profile." });
+      return res
+        .status(403)
+        .json({
+          message:
+            "Access denied. Only service providers can update their profile.",
+        });
     }
 
     // Prepare the update object
     const updateData = {
-      ...(skills && { skills: Array.isArray(skills) ? skills : skills.split(",").map(skill => skill.trim()) }),
-      ...(keywords && { keywords: Array.isArray(keywords) ? keywords : keywords.split(",").map(keyword => keyword.trim()) }),
-      ...(country && { country }),
-      ...(workDays && { workDays: Array.isArray(workDays) ? workDays : workDays.split(",").map(day => day.trim()) }),
-      ...(experienceYears !== undefined && { experienceYears: parseInt(experienceYears, 10) }),
-      ...(phoneNumber !== undefined && { phoneNumber: parseInt(phoneNumber, 10) }),
+      ...(skills && {
+        skills: Array.isArray(skills)
+          ? skills.map(skill => capitalizeFirstLetter(skill)) // Capitalize first letter of skills
+          : skills.split(",").map((skill) => capitalizeFirstLetter(skill.trim())), // Capitalize first letter of skills
+      }),
+      ...(keywords && {
+        keywords: Array.isArray(keywords)
+          ? keywords.map(keyword => capitalizeFirstLetter(keyword)) // Capitalize first letter of keywords
+          : keywords.split(",").map((keyword) => capitalizeFirstLetter(keyword.trim())), // Capitalize first letter of keywords
+      }),
+      ...(country && { country: capitalizeFirstLetter(country) }), // Capitalize first letter of country
+      ...(workDays && {
+        workDays: Array.isArray(workDays)
+          ? workDays.map(day => capitalizeFirstLetter(day)) // Capitalize first letter of workDays
+          : workDays.split(",").map((day) => capitalizeFirstLetter(day.trim())), // Capitalize first letter of workDays
+      }),
+      ...(experienceYears !== undefined && {
+        experienceYears: parseInt(experienceYears, 10),
+      }),
+      ...(phoneNumber !== undefined && {
+        phoneNumber: phoneNumber,
+      }),
       ...(homeService !== undefined && { homeService: Boolean(homeService) }),
     };
 
     // Update the user's profile
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true }
+    );
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found." });
@@ -41,12 +86,16 @@ export const updateServiceProviderProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).json({ message: "An error occurred while updating the profile." });
+    res
+      .status(500)
+      .json({
+        message: "An error occurred while updating the profile.",
+        error: error.message,
+      });
   }
 };
 
 // Get FH Coins
-// filepath: c:\Users\4bdisa\Desktop\fixerhub\backend\controllers\userController.js
 export const getFhCoins = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("fhCoins");
@@ -56,6 +105,30 @@ export const getFhCoins = async (req, res) => {
     res.status(200).json({ fhCoins: user.fhCoins });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch fh-coin balance" });
+  }
+};
+
+export const searchProviders = async (req, res) => {
+  try {
+    const { description, category, customerLocation, media } = req.body; // Include media
+
+    console.log("Received media URLs:", media); // Verify the data
+
+    // ... existing search logic ...
+
+    const providers = await User.find({
+      role: "service_provider",
+      // ... other search criteria ...
+    });
+
+    console.log("Providers found:", providers); // Log the providers
+
+    res.status(200).json({ success: true, providers });
+  } catch (error) {
+    console.error("Error searching providers:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to search providers" });
   }
 };
 

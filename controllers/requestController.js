@@ -1,5 +1,5 @@
-import ServiceRequest from "../models/ServiceRequest.js"; // Ensure this is declared only once
-import User from "../models/user.js";
+import ServiceRequest from '../models/ServiceRequest.js';
+import User from '../models/user.js';
 import jwt from "jsonwebtoken"; // Import jwt for token verification
 import Review from "../models/Review.js"; // Import the Review model
 
@@ -85,31 +85,31 @@ export const selectProvider = async (req, res) => {
   }
 };
 
+// Create a new service request
 export const createRequest = async (req, res) => {
   try {
-    const { category, description, providerId, location, budget, isFixedPrice } = req.body;
+    const { providerId, description, category, location, budget, isFixedPrice, media } = req.body; // Include media
 
-    // Ensure the provider ID is provided
-    if (!providerId) {
-      return res.status(400).json({ success: false, message: "Provider ID is required" });
-    }
+    console.log("Received media URLs:", media); // Log the received media URLs
 
-    // Create a service request using the customer's ID from the auth token
-    const newRequest = await ServiceRequest.create({
-      customer: req.user._id, // Use the customer's ID from the token
+    const newRequest = new ServiceRequest({
+      customer: req.user._id,
       providerId,
-      category,
       description,
+      category,
       location,
       budget,
       isFixedPrice,
-      status: "pending",
+      media: media || [], // Save the media URLs
     });
 
-    res.status(201).json({ success: true, data: newRequest });
+    const savedRequest = await newRequest.save();
+    console.log("Saved request:", savedRequest); // Log the saved request
+
+    res.status(201).json({ success: true, request: savedRequest });
   } catch (error) {
     console.error("Error creating service request:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: "Failed to create service request" });
   }
 };
 
@@ -127,7 +127,9 @@ export const getRequestsForProvider = async (req, res) => {
       return res.status(400).json({ message: "Invalid token. Provider ID is missing." });
     }
 
-    const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email");
+    console.log("Before ServiceRequest.find");
+    const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email profileImage").populate('media');
+    console.log("After ServiceRequest.find", requests);
 
     if (!requests || requests.length === 0) {
       return res.status(200).json({ success: true, data: [] });

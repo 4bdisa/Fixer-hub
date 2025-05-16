@@ -4,6 +4,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 
+// Function to capitalize the first letter of a string
+const capitalizeFirstLetter = (str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 // Handle Google OAuth Login Success
 export const googleOAuthCallback = (req, res) => {
   // Generate token with userId, role, and name
@@ -102,8 +107,8 @@ export const completeServiceProvider = async (req, res) => {
       role: 'service_provider',
       password: await bcrypt.hash(password, 10),
       skills: typeof skills === 'string'
-        ? skills.split(',').map(s => s.trim()).filter(Boolean)
-        : skills,
+        ? skills.split(',').map(s => capitalizeFirstLetter(s.trim())).filter(Boolean)
+        : skills.map(s => capitalizeFirstLetter(s)),
       location: {
         type: 'Point',
         coordinates: Array.isArray(location) ? location : JSON.parse(location)
