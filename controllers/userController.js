@@ -112,7 +112,7 @@ export const searchProviders = async (req, res) => {
   try {
     const { description, category, customerLocation, media } = req.body; // Include media
 
-    console.log("Received media URLs:", media); // Verify the data
+    
 
     // ... existing search logic ...
 
@@ -121,7 +121,7 @@ export const searchProviders = async (req, res) => {
       // ... other search criteria ...
     });
 
-    console.log("Providers found:", providers); // Log the providers
+    
 
     res.status(200).json({ success: true, providers });
   } catch (error) {

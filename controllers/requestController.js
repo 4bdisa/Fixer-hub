@@ -1,6 +1,6 @@
 import ServiceRequest from '../models/ServiceRequest.js';
 import User from '../models/user.js';
-import jwt from "jsonwebtoken"; // Import jwt for token verification
+import jwt from 'jsonwebtoken';
 import Review from "../models/Review.js"; // Import the Review model
 
 // Controller to create a new service request
@@ -54,7 +54,7 @@ export const searchProviders = async (req, res) => {
 
 export const selectProvider = async (req, res) => {
   try {
-    const { providerId, description, category, location, budget, isFixedPrice } = req.body;
+    const { providerId, description, category, location, budget, isFixedPrice, media } = req.body;
 
     // Ensure the customer is authenticated
     const customer = req.user;
@@ -72,16 +72,20 @@ export const selectProvider = async (req, res) => {
       budget,
       isFixedPrice,
       status: "pending",
+      media: media || [] // Initialize media as an empty array
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Service request created successfully.",
+    // Respond with the new request
+    res.status(201).json({
+      message: "Service request created successfully!",
       request: newRequest,
     });
-  } catch (err) {
-    console.error("Error in /select-provider:", err);
-    res.status(500).json({ error: "Failed to create service request." });
+  } catch (error) {
+    console.error("Error creating service request:", error);
+    res.status(500).json({
+      error: "Failed to create service request",
+      details: error.message,
+    });
   }
 };
 
@@ -90,7 +94,7 @@ export const createRequest = async (req, res) => {
   try {
     const { providerId, description, category, location, budget, isFixedPrice, media } = req.body; // Include media
 
-    console.log("Received media URLs:", media); // Log the received media URLs
+    
 
     const newRequest = new ServiceRequest({
       customer: req.user._id,
@@ -104,7 +108,7 @@ export const createRequest = async (req, res) => {
     });
 
     const savedRequest = await newRequest.save();
-    console.log("Saved request:", savedRequest); // Log the saved request
+    
 
     res.status(201).json({ success: true, request: savedRequest });
   } catch (error) {
@@ -127,18 +131,21 @@ export const getRequestsForProvider = async (req, res) => {
       return res.status(400).json({ message: "Invalid token. Provider ID is missing." });
     }
 
-    console.log("Before ServiceRequest.find");
+    
     const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email profileImage").populate('media');
-    console.log("After ServiceRequest.find", requests);
+    
 
     if (!requests || requests.length === 0) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(404).json({ message: "No requests found for this provider" });
     }
 
-    res.status(200).json({ success: true, data: requests });
+    res.status(200).json({
+      message: "Successfully retrieved requests for provider",
+      data: requests,
+    });
   } catch (error) {
     console.error("Error fetching requests:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch requests." });
+    res.status(500).json({ error: "Failed to fetch requests" });
   }
 };
 
