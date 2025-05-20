@@ -6,16 +6,23 @@ const capitalizeFirstLetter = (str) => {
 };
 
 // Get User Profile
-export const getUserProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select("-password");
+    // Assuming the user ID is available in req.user after authentication
+    const user = await User.findById(req.user.id).select('-password'); // Exclude password for security
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(user);
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    res.status(500).json({ message: "Failed to fetch user profile" });
+    res.status(500).json({ message: "Failed to fetch user profile", error: error.message });
   }
 };
 
@@ -112,16 +119,12 @@ export const searchProviders = async (req, res) => {
   try {
     const { description, category, customerLocation, media } = req.body; // Include media
 
-    
-
     // ... existing search logic ...
 
     const providers = await User.find({
       role: "service_provider",
       // ... other search criteria ...
     });
-
-    
 
     res.status(200).json({ success: true, providers });
   } catch (error) {

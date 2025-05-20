@@ -9,10 +9,12 @@ import "./config/passport.js"; // Passport Config
 import userRoutes from "./routes/userRoutes.js"; // Import the user route
 import requestRoutes from "./routes/requestRoutes.js"; // Import the request route  
 import transactionRoutes from "./routes/transactionRoutes.js"; // Import the transaction route
+import reportRoutes from './routes/reportRoutes.js'; // Corrected import
 
 
 dotenv.config();
 const app = express();
+const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(
@@ -55,7 +57,8 @@ app.use("/", authRoutes);
 app.use("/api", authRoutes, userRoutes);
 app.use("/api/v1", requestRoutes);
 app.use("/api/transactions", transactionRoutes);
-// Example Express.js backend route
+app.use('/api/reports', reportRoutes); // Use the report routes
+
 // Database & Server
 mongoose
   .connect(process.env.MONGO_URI)
