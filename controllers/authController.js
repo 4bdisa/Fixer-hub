@@ -3,19 +3,76 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/user.js';
-
+import passport from 'passport';
 // Function to capitalize the first letter of a string
 const capitalizeFirstLetter = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
 // Handle Google OAuth Login Success
-export const googleOAuthCallback = (req, res) => {
-  // Generate token with userId, role, and name
-  const token = generateToken(req.user._id, req.user.role, req.user.name);
+export const googleOAuthCallback =  async (req, res, next) => {
+  passport.authenticate(
+    "google",
+    { failureRedirect: "/login" },
+    async (err, user, info) => {
+      if (err) return next(err);
 
-  // Send token and user details to frontend
-  res.json({ token, user: req.user });
+      if (user) {
+        // Check if user is banned
+        if (!user.isVerified) {
+          return res.status(403).json({
+            success: false,
+            error: "Your account is banned. Please contact the administrator.",
+          });
+        }
+
+        // ✅ Logged-in user (already in DB)
+        await req.logIn(user, (err) => {
+          if (err) return next(err);
+
+          // 4. Generate JWT token
+          const token = jwt.sign(
+            {
+              id: user._id,
+              email: user.email,
+              role: user.role,
+              name: user.name,
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN }
+          );
+
+          // 5. Prepare response with minimal user data and token
+          const response = {
+            token: token,
+            user: {
+              name: user.name,
+              id: user._id,
+              email: user.email,
+              profileImage: user.profileImage,
+              role: user.role,
+            },
+          };
+
+          // 6. Send response (no redirect, just JSON with token and user data)
+          return res.redirect(
+            `${process.env.FRONTEND_URL
+            }/oauth/callback?token=${token}&user=${JSON.stringify(
+              response.user
+            )}`
+          );
+        });
+      } else if (info?.token) {
+        // 🆕 New user - send token for onboarding
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/select-role?token=${info.token}`
+        );
+      } else {
+        // ❌ Unknown case
+        return res.redirect("/login");
+      }
+    }
+  )(req, res, next);
 };
 
 // Logout User
@@ -24,6 +81,22 @@ export const logoutUser = (req, res) => {
     res.status(200).json({ message: "User logged out" });
   });
 };
+export const verifyUser = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
+    res.status(200).json({ message: "Token is valid", user: decoded });
+  } catch (err) {
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+}
 
 export const completeServiceProvider = async (req, res) => {
   // 1️⃣ Validate request
@@ -284,8 +357,17 @@ export const loginUser = async (req, res) => {
   try {
     // Find user with password
     const user = await User.findOne({ email }).select("+password");
+  
     if (!user) {
       return res.status(401).json({ success: false, error: "Invalid email" });
+    }
+
+    // Check if user is banned
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        error: "Your account is banned. Please contact the administrator.",
+      });
     }
 
     // Compare passwords
