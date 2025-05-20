@@ -3,7 +3,7 @@ import axios from 'axios';
 const chapa = axios.create({
   baseURL: 'https://api.chapa.co/v1',
   headers: {
-    Authorization: `Bearer ${process.env.CHAPA_API_KEY}`,
+    Authorization: `Bearer ${process.env.CHAPPA_API_SECRET}`, // Use the secret key here
     'Content-Type': 'application/json',
   },
 });
@@ -11,7 +11,9 @@ const chapa = axios.create({
 export const initiatePayment = async (data) => {
   try {
     const response = await chapa.post('/transaction/initialize', data);
+    console.log('Chapa Response:', response.data);
     return response.data;
+
   } catch (error) {
     throw new Error(`Chapa API Error: ${error.response?.data?.message || error.message}`);
   }

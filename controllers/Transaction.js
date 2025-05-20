@@ -45,18 +45,25 @@ export const createTransaction = async (req, res) => {
 // Handle Chapa webhook
 export const handleWebhook = async (req, res) => {
   try {
+    console.log("Chapa Webhook Received:", req.body);
+
     const { tx_ref, status } = req.body;
 
     // Verify transaction with Chapa
     const verification = await verifyPayment(tx_ref);
+    console.log("Chapa Verification Response:", verification);
 
     const transaction = await Transaction.findOne({ chapaTxRef: tx_ref });
 
     if (!transaction) {
+      console.log("Transaction not found for tx_ref:", tx_ref);
       return res.status(404).json({ error: "Transaction not found" });
     }
 
-    transaction.status = status;
+    console.log("Transaction before update:", transaction);
+
+    transaction.status = status; // Update transaction status
+    console.log("Transaction status from chapa:", status);
 
     if (status === "success") {
       // Calculate FH-Coins (e.g., 1 ETB = 10 FH-Coins)
@@ -64,12 +71,21 @@ export const handleWebhook = async (req, res) => {
 
       // Update user's FH-Coin balance
       const user = await User.findById(transaction.payer);
+      if (!user) {
+        console.log("User not found:", transaction.payer);
+        return res.status(404).json({ error: "User not found" });
+      }
+
       user.fhCoins = (user.fhCoins || 0) + fhCoins;
       await user.save();
+      console.log("User FH-Coin balance updated:", user.fhCoins);
     }
 
     await transaction.save();
+    console.log("Transaction updated:", transaction);
+
     res.status(200).json({ success: true });
+    console.log("Webhook processed successfully");
   } catch (error) {
     console.error("Webhook Handling Error:", error);
     res.status(500).json({ success: false, error: error.message });

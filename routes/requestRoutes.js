@@ -1,6 +1,6 @@
 import express from "express";
 import { createRequest, getRequestsForProvider, updateRequestStatus, getRequests, getJobHistory, getProviderJobHistory } from "../controllers/requestController.js";
-import { authenticate } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middleWares/authMiddleware.js";
 import { deleteRequest } from "../controllers/requestController.js";
 import { searchProviders, selectProvider } from "../controllers/requestController.js";
 import { getAcceptedRequestsByProvider } from "../controllers/requestController.js";

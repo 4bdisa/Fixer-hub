@@ -7,7 +7,8 @@ import passport from "passport";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passport.js"; // Passport Config
 import userRoutes from "./routes/userRoutes.js"; // Import the user route
-import requestRoutes from "./routes/requestRoutes.js"; // Import the request route
+import requestRoutes from "./routes/requestRoutes.js"; // Import the request route  
+import transactionRoutes from "./routes/transactionRoutes.js"; // Import the transaction route
 
 
 dotenv.config();
@@ -16,7 +17,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || "https://fixerhub.vercel.app/",
     credentials: true
   })
 );
@@ -46,6 +47,7 @@ app.use((req, res, next) => {
 app.use("/", authRoutes);
 app.use("/api", authRoutes, userRoutes);
 app.use("/api/v1", requestRoutes);
+app.use("/api/transactions", transactionRoutes);
 // Example Express.js backend route
 // Database & Server
 mongoose
