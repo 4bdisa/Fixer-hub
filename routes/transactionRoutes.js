@@ -1,6 +1,6 @@
 import express from 'express';
 import { createTransaction, handleWebhook } from '../controllers/Transaction.js';
-import { authenticate } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middleWares/authMiddleware.js"; // Import the authenticate middleware
 
 const router = express.Router();
 
