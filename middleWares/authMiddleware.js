@@ -7,7 +7,7 @@ export const authenticate = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ message: "No Token Provided" });
     }
-    
+
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 

@@ -10,7 +10,7 @@ import userRoutes from "./routes/userRoutes.js"; // Import the user route
 import requestRoutes from "./routes/requestRoutes.js"; // Import the request route  
 import transactionRoutes from "./routes/transactionRoutes.js"; // Import the transaction route
 import reportRoutes from './routes/reportRoutes.js'; // Corrected import
-
+import adminRouter from "./routes/adminRoute.js"; // Import the admin route
 
 dotenv.config();
 const app = express();
@@ -58,7 +58,13 @@ app.use("/api", authRoutes, userRoutes);
 app.use("/api/v1", requestRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use('/api/reports', reportRoutes); // Use the report routes
-
+app.use("/api/admin", adminRouter); // Use the user routes
+app.all("*", (req, res) => {
+  res.status(404).json({
+    message: `Route  ${req.originalUrl}not found`,
+  });
+}
+);
 // Database & Server
 mongoose
   .connect(process.env.MONGO_URI)
