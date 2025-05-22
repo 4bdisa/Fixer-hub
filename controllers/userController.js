@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import bcrypt from "bcrypt";
 
 // Function to capitalize the first letter of a string
 const capitalizeFirstLetter = (str) => {
@@ -138,7 +139,7 @@ export const searchProviders = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select("-password"); // Exclude password for security
+    const users = await User.find(); // Exclude password for security
     res.status(200).json({
       success: true,
       data: users,
@@ -163,3 +164,55 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch user", error: error.message });
   }
 };
+
+
+export const banUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Toggle the isVerified status
+    user.isVerified = !user.isVerified;
+    await user.save();
+
+    const message = user.isVerified ? 'User unbanned successfully' : 'User banned successfully';
+    res.status(200).json({ message: message, user });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error banning user', error: error.message });
+  }
+};
+
+
+export const updatePassword = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { newPassword } = req.body;
+
+        // Find the user by ID
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update the user's password
+        user.password = hashedPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error("Error updating password:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+

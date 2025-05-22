@@ -10,7 +10,7 @@ const capitalizeFirstLetter = (str) => {
 };
 
 // Handle Google OAuth Login Success
-export const googleOAuthCallback =  async (req, res, next) => {
+export const googleOAuthCallback = async (req, res, next) => {
   passport.authenticate(
     "google",
     { failureRedirect: "/login" },
@@ -357,9 +357,11 @@ export const loginUser = async (req, res) => {
   try {
     // Find user with password
     const user = await User.findOne({ email }).select("+password");
-  
+
     if (!user) {
-      return res.status(401).json({ success: false, error: "Invalid email" });
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid email or password" }); // Changed error message
     }
 
     // Check if user is banned
@@ -373,7 +375,9 @@ export const loginUser = async (req, res) => {
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, error: "Invalid password" });
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid email or password" }); // Changed error message
     }
 
     // Generate JWT token with user's name
@@ -400,6 +404,8 @@ export const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({ success: false, error: "Authentication failed" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Authentication failed" });
   }
 };

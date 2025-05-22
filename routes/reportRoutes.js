@@ -1,8 +1,10 @@
 import express from 'express';
 const router = express.Router();
-import { createReport } from '../controllers/reportController.js';
-//import { protect } from '../middleware/authMiddleware.js'; // Example auth middleware
+import { createReport, getReports, checkIfReported } from '../controllers/reportController.js';
+import { verifyAdmin, authorizeRoles } from '../middleWares/authMiddleware.js';
 
-router.post('/', createReport); // You might want to add auth middleware here (e.g., protect)
+router.post('/', createReport);
+router.get('/get', verifyAdmin, authorizeRoles('admin'), getReports);
+router.post('/check', checkIfReported); // <-- Add this line
 
 export default router;

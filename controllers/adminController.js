@@ -1,6 +1,7 @@
 import Admin from "../models/adminModel.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+
 export const createAdmin = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -23,6 +24,7 @@ export const createAdmin = async (req, res) => {
 };
 
 export const loginAdmin = async (req, res) => {
+
     try {
         const { email, password } = req.body;
 
@@ -38,15 +40,15 @@ export const loginAdmin = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
-
         // Create JWT token
         const token = jwt.sign(
-            { id: admin._id, email: admin.email },
+            { id: admin._id, email: admin.email, role: admin.role },
             process.env.JWT_SECRET, // Ensure this environment variable is set
             { expiresIn: '1d' } // Token expires in 1 day
         );
 
         // Return successful response with token and admin details
+
         res.status(200).json({
             message: "Login successful",
             token,
@@ -75,3 +77,4 @@ export const getAdmin = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
