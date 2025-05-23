@@ -11,6 +11,7 @@ import requestRoutes from "./routes/requestRoutes.js"; // Import the request rou
 import transactionRoutes from "./routes/transactionRoutes.js"; // Import the transaction route
 import reportRoutes from './routes/reportRoutes.js'; // Corrected import
 import adminRouter from "./routes/adminRoute.js"; // Import the admin route
+import { verifyPendingPayments } from './controllers/Transaction.js';
 
 dotenv.config();
 const app = express();
@@ -70,8 +71,11 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected");
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`✅ Server running on port ${process.env.PORT}`);
+    app.listen(port, () => {
+      console.log(`✅ Server running on port ${port}`);
+
+      // Verify pending payments every 60 seconds (adjust as needed)
+      setInterval(verifyPendingPayments, 60000);
     });
   })
   .catch((err) => console.error(err));
