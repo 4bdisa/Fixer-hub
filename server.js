@@ -75,7 +75,7 @@ mongoose
       console.log(`✅ Server running on port ${port}`);
 
       // Verify pending payments every 60 seconds (adjust as needed)
-      setInterval(verifyPendingPayments, 60000);
+      setInterval(verifyPendingPayments, 10000);
     });
   })
   .catch((err) => console.error(err));

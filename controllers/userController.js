@@ -190,29 +190,63 @@ export const banUser = async (req, res) => {
 
 
 export const updatePassword = async (req, res) => {
-    try {
-        const userId = req.params.id;
-        const { newPassword } = req.body;
+  try {
+    const userId = req.params.id;
+    const { newPassword } = req.body;
 
-        // Find the user by ID
-        const user = await User.findById(userId);
+    // Find the user by ID
+    const user = await User.findById(userId);
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        // Hash the new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update the user's password
-        user.password = hashedPassword;
-        await user.save();
-
-        res.status(200).json({ message: "Password updated successfully" });
-    } catch (error) {
-        console.error("Error updating password:", error);
-        res.status(500).json({ message: "Server error" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updateCustomerProfile = async (req, res) => {
+  try {
+    const { userId, phoneNumber, country } = req.body; // Get userId, phoneNumber, and country from req.body
+
+    // Validate userId
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the user's profile information
+    if (phoneNumber) {
+      user.phoneNumber = phoneNumber;
+    }
+    if (country) {
+      user.country = country;
+    }
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Failed to update profile', error: error.message });
+  }
 };
 

@@ -11,3 +11,4 @@ export const getReviewsByServiceProvider = async (req, res) => {
   const reviews = await Review.find({ serviceProvider: req.params.serviceProviderId });
   res.status(200).json(reviews);
 };
+

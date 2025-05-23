@@ -40,12 +40,30 @@ export const searchProviders = async (req, res) => {
           completedJobs: 1,
           experience: 1, // Ensure this field is included
           distance: 1,
+          _id: 1, // Include _id for fetching reviews
         },
       },
     ]);
 
+    // Fetch reviews and calculate average rating for each provider
+    const providersWithReviews = await Promise.all(
+      providers.map(async (provider) => {
+        const reviews = await Review.find({ serviceProvider: provider._id });
+        
+        if (reviews && reviews.length > 0) {
+          let totalRating = 0;
+          reviews.forEach((review) => {
+            totalRating += review.rating;
+          });
+          provider.averageRating = totalRating / reviews.length;
+        } else {
+          provider.averageRating = 0; // Default average rating if no reviews
+        }
+        return provider;
+      })
+    );
 
-    res.status(200).json({ success: true, providers });
+    res.status(200).json({ success: true, providers: providersWithReviews });
   } catch (error) {
     console.error("Error searching providers:", error);
     res.status(500).json({ error: "Failed to search providers. Please try again later." });
