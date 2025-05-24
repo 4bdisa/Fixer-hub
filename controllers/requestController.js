@@ -346,6 +346,7 @@ export const completeRequest = async (req, res) => {
     const provider = await User.findById(serviceRequest.providerId);
     if (provider) {
       provider.availability = true;
+      provider.completedJobs = (provider.completedJobs || 0) + 1; // Increment completedJobs
       await provider.save();
     }
     await serviceRequest.save();
