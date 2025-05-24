@@ -1,9 +1,11 @@
 import express from "express";
 import { createAdmin, getAdmin, loginAdmin } from "../controllers/adminController.js";
-import { getAllUsers, getUserById } from "../controllers/userController.js";
+import { getAllUsers, getUserById,getUsers } from "../controllers/userController.js";
 import { authorizeRoles, authenticate, verifyAdmin } from "../middleWares/authMiddleware.js";
 import { banUser, updatePassword } from "../controllers/userController.js"; // Import the banUser function
 import { deleteReport } from "../controllers/reportController.js"; // Import the deleteReport function
+import { getTotalRevenue } from '../controllers/Transaction.js';
+
 const router = express.Router();
 router.get("/getAdmin/:id", getAdmin); // Modified to accept ID as a parameter
 router.post("/createAdmin", createAdmin);
@@ -13,4 +15,6 @@ router.get("/getUserById/:id", getUserById); // Uncomment if you have a function
 router.put("/banUser/:id", verifyAdmin, authorizeRoles('admin'), banUser); // Add this line
 router.delete("/reports/deleteReport/:id", verifyAdmin, authorizeRoles('admin'), deleteReport); // Add delete report route
 router.put("/users/:id/password", verifyAdmin, authorizeRoles('admin'), updatePassword);
+router.get('/getusers', verifyAdmin, authorizeRoles('admin'), getUsers); // Get all users
+router.get('/revenue', getTotalRevenue);
 export default router;

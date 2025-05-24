@@ -1,9 +1,7 @@
 import Report from '../models/Report.js';
 import ServiceRequest from '../models/ServiceRequest.js';
 
-// @desc   Create a new report
-// @route  POST /api/reports
-// @access Private (example - adjust as needed)
+
 const createReport = async (req, res) => {
     try {
         const { requestId, reporterId, reportType, comment } = req.body;
@@ -75,6 +73,7 @@ const getReports = async (req, res) => {
             };
         });
 
+        
         res.status(200).json(reportsWithProvider);
     } catch (error) {
         console.error(error);

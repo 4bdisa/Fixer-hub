@@ -1,6 +1,7 @@
 import Transaction from '../models/Transaction.js';
 import User from '../models/user.js';
 import { initiatePayment, verifyPayment } from '../utils/chapaClient.js';
+import mongoose from 'mongoose';
 
 // Create new transaction
 export const createTransaction = async (req, res) => {
@@ -140,6 +141,7 @@ export const verifyPendingPayments = async () => {
           user.fhCoins = (user.fhCoins || 0) + fhCoins;
           await user.save();
           console.log("User FH-Coin balance updated:", user.fhCoins);
+
         } else if (verification && verification.data && verification.data.status === 'failed') {
           transaction.status = 'failed';
         } else {
@@ -174,4 +176,30 @@ export const getUserTransactions = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+// Get total revenue
+export const getTotalRevenue = async (req, res) => {
+    try {
+        const totalRevenue = await Transaction.aggregate([
+            {
+                $match: { status: 'success' }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$totalAmount' }
+                }
+            }
+        ]);
+
+        if (totalRevenue.length > 0) {
+            res.status(200).json({ totalRevenue: totalRevenue[0].totalRevenue });
+        } else {
+            res.status(200).json({ totalRevenue: 0 });
+        }
+    } catch (error) {
+        console.error("Error fetching total revenue:", error);
+        res.status(500).json({ message: "Failed to fetch total revenue", error: error.message });
+    }
 };

@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
+import asyncHandler from "express-async-handler";
 
 // Function to capitalize the first letter of a string
 const capitalizeFirstLetter = (str) => {
@@ -249,4 +250,16 @@ export const updateCustomerProfile = async (req, res) => {
     res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 };
+
+// @desc    Get all users
+// @route   GET /api/users/getUsers
+// @access  Private/Admin
+export const getUsers = asyncHandler(async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch users", error: error.message });
+  }
+});
 
