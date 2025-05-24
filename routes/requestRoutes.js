@@ -25,7 +25,7 @@ router.get("/requests/get", authenticate, getRequestsForProvider);
 
 // Route to update the status of a service request
 router.patch("/requests/:requestId/status", authenticate, updateRequestStatus);
-router.patch("/requests/complete/:requestId", authenticate, completeRequest);
+router.put("/requests/:requestId/complete", authenticate, completeRequest);
 
 
 router.get("/requests/history", authenticate, getJobHistory);

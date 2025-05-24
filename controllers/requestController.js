@@ -49,7 +49,7 @@ export const searchProviders = async (req, res) => {
     const providersWithReviews = await Promise.all(
       providers.map(async (provider) => {
         const reviews = await Review.find({ serviceProvider: provider._id });
-        
+
         if (reviews && reviews.length > 0) {
           let totalRating = 0;
           reviews.forEach((review) => {
@@ -112,7 +112,7 @@ export const createRequest = async (req, res) => {
   try {
     const { providerId, description, category, location, budget, isFixedPrice, media } = req.body; // Include media
 
-    
+
 
     const newRequest = new ServiceRequest({
       customer: req.user._id,
@@ -126,7 +126,7 @@ export const createRequest = async (req, res) => {
     });
 
     const savedRequest = await newRequest.save();
-    
+
 
     res.status(201).json({ success: true, request: savedRequest });
   } catch (error) {
@@ -149,9 +149,9 @@ export const getRequestsForProvider = async (req, res) => {
       return res.status(400).json({ message: "Invalid token. Provider ID is missing." });
     }
 
-    
+
     const requests = await ServiceRequest.find({ providerId, status: "pending" }).populate("customer", "name email profileImage").populate('media');
-    
+
 
     if (!requests || requests.length === 0) {
       return res.status(404).json({ message: "No requests found for this provider" });
@@ -311,72 +311,62 @@ export const deleteRequest = async (req, res) => {
 
 export const completeRequest = async (req, res) => {
   try {
-    const { requestId } = req.params;
     const { rating, comment } = req.body;
+    const requestId = req.params.requestId;
 
-    // Validate required fields
-    if (!rating) {
-      return res.status(400).json({
-        success: false,
-        message: "Rating is required."
-      });
+    // Find the service request
+    const serviceRequest = await ServiceRequest.findById(requestId);
+
+    if (!serviceRequest) {
+      return res.status(404).json({ message: "Service request not found" });
     }
 
-    // Find the request
-    const request = await ServiceRequest.findById(requestId);
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: "Request not found."
-      });
+    // Check if the request is already completed
+    if (serviceRequest.status === "completed") {
+      return res.status(400).json({ message: "Service request is already completed" });
     }
 
-    // Authorization check
-    if (request.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized to complete this request."
-      });
-    }
+    console.log("Service Request:", serviceRequest.providerId);
+    // Create a new review
 
-    // Create review
-    const newReview = await Review.create({
-      userId: req.user._id,
-      providerId: request.providerId, // Added provider reference
-      serviceRequestId: requestId,    // Added request reference
+    const newReview = new Review({
+      userId: serviceRequest.customer, // Save the customer's ID
+      serviceProvider: serviceRequest.providerId, // Save the provider's ID
       rating,
-      comment: comment || "No comment provided.",
+      comment,
     });
+    console.log("New Review:", newReview);
+    // Save the review to the database
+    const savedReview = await newReview.save();
 
-    // Update the service request
-    request.status = "completed";
-    request.reviewId = newReview._id;
-    await request.save();
-
-    // Update provider's status and stats
-    const provider = await User.findById(request.providerId);
+    // Update the service request status to "completed" and save the review ID
+    serviceRequest.status = "completed";
+    serviceRequest.reviewId = savedReview._id;
+    // Find the provider and set availability to true
+    const provider = await User.findById(serviceRequest.providerId);
     if (provider) {
-      provider.available = true;      // Set available to true
-      provider.availability = true;   // Maintain backward compatibility
-      provider.completedJobs = (provider.completedJobs || 0) + 1;
+      provider.availability = true;
       await provider.save();
     }
+    await serviceRequest.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Request completed successfully.",
-      data: {
-        request,
-        review: newReview
-      }
-    });
+    res
+      .status(200)
+      .json({
+        message: "Service request completed and review submitted successfully",
+        review: savedReview,
+      });
   } catch (error) {
-    console.error("Error completing request:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to complete request.",
-      error: error.message
-    });
+    console.error(
+      "Error completing service request and submitting review:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        message: "Failed to complete service request and submit review",
+        error: error.message,
+      });
   }
 };
 
