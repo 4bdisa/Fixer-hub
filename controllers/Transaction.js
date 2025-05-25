@@ -122,7 +122,7 @@ export const verifyPendingPayments = async () => {
         console.log(`Verifying transaction: ${transaction.chapaTxRef}`);
         // Verify payment with Chapa
         const verification = await verifyPayment(transaction.chapaTxRef);
-        console.log("Chapa Verification Response:", verification);
+        
 
         // Update transaction status based on verification response
         if (verification && verification.data && verification.data.status === 'success') {

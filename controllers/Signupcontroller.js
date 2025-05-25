@@ -7,11 +7,11 @@ import { OAuth2Client } from 'google-auth-library';
 export const completeServiceProviderProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { skills, keywords, country, workDays, experienceYears, homeService } = req.body;
+    const { skills, country, workDays, experienceYears, homeService } = req.body;
     // Step 1: Prepare the update object for the user
     const updateData = {
       skills,
-      keywords,
+      
       country,
       workDays,
       experienceYears,

@@ -232,7 +232,7 @@ export const getJobHistory = async (req, res) => {
   try {
     const userId = req.user._id; // Ensure `req.user` is populated by the `authenticate` middleware
     const requests = await ServiceRequest.find({ customer: userId })
-      .populate("providerId", "name photo phoneNumber") // Populate provider details
+      .populate("providerId", "name profileImage phoneNumber") // Populate provider details
       .populate("reviewId", "rating comment") // Populate review details
       .sort({ updatedAt: -1 }); // Sort by most recently updated
     res.status(200).json({ success: true, data: requests });
@@ -246,8 +246,8 @@ export const getProviderJobHistory = async (req, res) => {
   try {
     const providerId = req.user._id; // Ensure `req.user` is populated by the `authenticate` middleware
     const requests = await ServiceRequest.find({ providerId })
-      .populate("customer", "name photo") // Populate customer details
-      .populate("reviewId", "rating comment") // Populate review details
+      .populate("customer", "name profileImage") // Populate customer details
+      .populate("reviewId", "rating comment ") // Populate review details
       .sort({ updatedAt: -1 }); // Sort by most recently updated
 
 

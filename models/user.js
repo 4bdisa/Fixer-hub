@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   },
 
   skills: [String],
-  keywords: [String],
+  
   completedJobs: { type: Number, default: 0 },
   experienceYears: { type: Number, default: 0 },
   phoneNumber: { type: Number, default: 0 },

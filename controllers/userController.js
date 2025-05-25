@@ -33,7 +33,7 @@ export const updateServiceProviderProfile = async (req, res) => {
   try {
     const {
       skills,
-      keywords,
+      
       country,
       workDays,
       experienceYears,
@@ -57,11 +57,6 @@ export const updateServiceProviderProfile = async (req, res) => {
         skills: Array.isArray(skills)
           ? skills.map(skill => capitalizeFirstLetter(skill)) // Capitalize first letter of skills
           : skills.split(",").map((skill) => capitalizeFirstLetter(skill.trim())), // Capitalize first letter of skills
-      }),
-      ...(keywords && {
-        keywords: Array.isArray(keywords)
-          ? keywords.map(keyword => capitalizeFirstLetter(keyword)) // Capitalize first letter of keywords
-          : keywords.split(",").map((keyword) => capitalizeFirstLetter(keyword.trim())), // Capitalize first letter of keywords
       }),
       ...(country && { country: capitalizeFirstLetter(country) }), // Capitalize first letter of country
       ...(workDays && {
@@ -251,9 +246,6 @@ export const updateCustomerProfile = async (req, res) => {
   }
 };
 
-// @desc    Get all users
-// @route   GET /api/users/getUsers
-// @access  Private/Admin
 export const getUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find({});
